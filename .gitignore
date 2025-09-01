@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .phpunit.cache
 bootstrap/ssr
 node_modules
@@ -10,6 +11,20 @@ resources/js/wayfinder
 storage/*.key
 storage/pail
 vendor
+=======
+/.phpunit.cache
+/bootstrap/ssr
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/resources/js/actions
+/resources/js/routes
+/resources/js/wayfinder
+/storage/*.key
+/storage/pail
+/vendor
+>>>>>>> 3dfe356 (first com)
 .env
 .env.backup
 .env.production
@@ -19,9 +34,18 @@ Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
+<<<<<<< HEAD
 auth.json
 .fleet
 .idea
 .nova
 .vscode
 .zed
+=======
+/auth.json
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+>>>>>>> 3dfe356 (first com)
