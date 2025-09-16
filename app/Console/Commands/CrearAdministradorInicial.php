@@ -2,12 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Models\LogAuditoria;
+use App\Models\Operador;
+use App\Models\Sesion;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use App\Models\Operador;
-use App\Models\Sesion;
-use App\Models\LogAuditoria;
 
 class CrearAdministradorInicial extends Command
 {
@@ -41,7 +41,7 @@ class CrearAdministradorInicial extends Command
 
             // Verificar si ya existe un administrador
             $administradorExistente = Operador::where('rol', 'administrador')->first();
-            
+
             if ($administradorExistente) {
                 $this->warn('⚠️  Ya existe un administrador en el sistema:');
                 $this->line("   • ID: {$administradorExistente->id}");
@@ -49,9 +49,10 @@ class CrearAdministradorInicial extends Command
                 $this->line("   • Email: {$administradorExistente->correo_electronico}");
                 $this->line("   • Rol: {$administradorExistente->rol}");
                 $this->newLine();
-                
-                if (!$this->confirm('¿Desea crear otro administrador?')) {
+
+                if (! $this->confirm('¿Desea crear otro administrador?')) {
                     $this->info('Operación cancelada.');
+
                     return 0;
                 }
             }
@@ -68,12 +69,12 @@ class CrearAdministradorInicial extends Command
                 'email' => $email,
                 'password' => $password,
                 'nombre' => $nombre,
-                'telefono' => $telefono
+                'telefono' => $telefono,
             ], [
                 'email' => 'required|email|unique:operadores,correo_electronico',
                 'password' => 'required|min:8',
                 'nombre' => 'required|string|min:3|max:255',
-                'telefono' => 'required|string|max:20'
+                'telefono' => 'required|string|max:20',
             ]);
 
             if ($validator->fails()) {
@@ -81,6 +82,7 @@ class CrearAdministradorInicial extends Command
                 foreach ($validator->errors()->all() as $error) {
                     $this->line("   • {$error}");
                 }
+
                 return 1;
             }
 
@@ -90,18 +92,19 @@ class CrearAdministradorInicial extends Command
             $this->line("   • Email: {$email}");
             $this->line("   • Teléfono: {$telefono}");
             $this->line("   • Dirección: {$direccion}");
-            $this->line("   • Rol: Administrador");
-            $this->line("   • Nivel de Acceso: Máximo (5)");
+            $this->line('   • Rol: Administrador');
+            $this->line('   • Nivel de Acceso: Máximo (5)');
             $this->newLine();
 
-            if (!$this->confirm('¿Confirma la creación del administrador con estos datos?')) {
+            if (! $this->confirm('¿Confirma la creación del administrador con estos datos?')) {
                 $this->info('Operación cancelada.');
+
                 return 0;
             }
 
             // Crear el administrador
             $this->info('🔄 Creando administrador...');
-            
+
             $administrador = Operador::create([
                 'nombre_completo' => $nombre,
                 'correo_electronico' => $email,
@@ -122,17 +125,17 @@ class CrearAdministradorInicial extends Command
                     'exportar_datos' => true,
                     'acceso_completo_sistema' => true,
                     'crear_otros_administradores' => true,
-                    'gestionar_sistema' => true
+                    'gestionar_sistema' => true,
                 ],
                 'estado' => 'activo',
                 'notas_internas' => 'Usuario administrador creado vía comando Artisan',
                 'fecha_registro' => now(),
-                'ultima_actividad' => now()
+                'ultima_actividad' => now(),
             ]);
 
             // Crear sesión inicial
             $this->info('🔄 Creando sesión inicial...');
-            
+
             $sesion = Sesion::create([
                 'usuario_id' => $administrador->id,
                 'tipo_usuario' => 'operador',
@@ -146,13 +149,13 @@ class CrearAdministradorInicial extends Command
                 'user_agent' => 'Comando Artisan - CrearAdministradorInicial',
                 'actividad_reciente' => [
                     'ultima_accion' => 'Creación de cuenta administrador vía comando',
-                    'fecha_ultima_accion' => now()->toISOString()
-                ]
+                    'fecha_ultima_accion' => now()->toISOString(),
+                ],
             ]);
 
             // Log de auditoría
             $this->info('🔄 Registrando en log de auditoría...');
-            
+
             LogAuditoria::crear([
                 'usuario_id' => $administrador->id,
                 'tipo_usuario' => 'operador',
@@ -165,20 +168,20 @@ class CrearAdministradorInicial extends Command
                     'correo_electronico' => $administrador->correo_electronico,
                     'rol' => $administrador->rol,
                     'nivel_acceso' => $administrador->nivel_acceso,
-                    'metodo_creacion' => 'comando_artisan'
+                    'metodo_creacion' => 'comando_artisan',
                 ],
                 'estado_accion' => 'exitoso',
                 'nivel_severidad' => 3,
                 'categoria_accion' => 'usuarios',
                 'ip_cliente' => '127.0.0.1',
-                'user_agent' => 'Comando Artisan - CrearAdministradorInicial'
+                'user_agent' => 'Comando Artisan - CrearAdministradorInicial',
             ]);
 
             // Mostrar información de éxito
             $this->newLine();
             $this->info('✅ Usuario administrador creado exitosamente!');
             $this->newLine();
-            
+
             $this->table(
                 ['Campo', 'Valor'],
                 [
@@ -189,7 +192,7 @@ class CrearAdministradorInicial extends Command
                     ['Nivel de Acceso', $administrador->nivel_acceso],
                     ['Estado', $administrador->estado],
                     ['ID de la Sesión', $sesion->id],
-                    ['Fecha de Creación', $administrador->fecha_registro->format('d/m/Y H:i:s')]
+                    ['Fecha de Creación', $administrador->fecha_registro->format('d/m/Y H:i:s')],
                 ]
             );
 
@@ -198,19 +201,19 @@ class CrearAdministradorInicial extends Command
             $this->line("   • Email: {$email}");
             $this->line("   • Contraseña: {$password}");
             $this->newLine();
-            
+
             $this->warn('⚠️  IMPORTANTE: Guarde estas credenciales en un lugar seguro.');
             $this->warn('   Se recomienda cambiar la contraseña después del primer inicio de sesión.');
             $this->newLine();
 
             $this->info('🚀 El sistema está listo para uso administrativo.');
-            
+
             return 0;
 
         } catch (\Exception $e) {
-            $this->error('❌ Error al crear el administrador: ' . $e->getMessage());
+            $this->error('❌ Error al crear el administrador: '.$e->getMessage());
             $this->newLine();
-            
+
             // Log del error
             try {
                 LogAuditoria::logError(
@@ -223,13 +226,13 @@ class CrearAdministradorInicial extends Command
                     [
                         'error_trace' => $e->getTraceAsString(),
                         'comando' => $this->getName(),
-                        'opciones' => $this->options()
+                        'opciones' => $this->options(),
                     ]
                 );
             } catch (\Exception $logError) {
-                $this->error('❌ Error adicional al registrar en log: ' . $logError->getMessage());
+                $this->error('❌ Error adicional al registrar en log: '.$logError->getMessage());
             }
-            
+
             return 1;
         }
     }

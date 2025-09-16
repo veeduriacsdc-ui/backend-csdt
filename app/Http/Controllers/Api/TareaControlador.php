@@ -3,13 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tarea;
-use App\Models\Veeduria;
 use App\Models\Operador;
-use Illuminate\Http\Request;
+use App\Models\Tarea;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 
 class TareaControlador extends Controller
 {
@@ -49,8 +47,8 @@ class TareaControlador extends Controller
             if ($request->filled('buscar')) {
                 $buscar = $request->buscar;
                 $query->where(function ($q) use ($buscar) {
-                    $q->where('Titulo', 'like', '%' . $buscar . '%')
-                      ->orWhere('Descripcion', 'like', '%' . $buscar . '%');
+                    $q->where('Titulo', 'like', '%'.$buscar.'%')
+                        ->orWhere('Descripcion', 'like', '%'.$buscar.'%');
                 });
             }
 
@@ -72,13 +70,13 @@ class TareaControlador extends Controller
                     'per_page' => $tareas->perPage(),
                     'total' => $tareas->total(),
                 ],
-                'message' => 'Tareas obtenidas exitosamente'
+                'message' => 'Tareas obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener tareas: ' . $e->getMessage()
+                'message' => 'Error al obtener tareas: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -91,23 +89,23 @@ class TareaControlador extends Controller
         try {
             $tarea = Tarea::with(['veeduria', 'operador', 'documentos'])->find($id);
 
-            if (!$tarea) {
+            if (! $tarea) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Tarea no encontrada'
+                    'message' => 'Tarea no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
                 'data' => $tarea,
-                'message' => 'Tarea obtenida exitosamente'
+                'message' => 'Tarea obtenida exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener tarea: ' . $e->getMessage()
+                'message' => 'Error al obtener tarea: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -126,14 +124,14 @@ class TareaControlador extends Controller
                 'Prioridad' => 'required|in:baja,media,alta,urgente',
                 'Estado' => 'required|in:pendiente,en_proceso,completada,cancelada',
                 'FechaVencimiento' => 'required|date|after:today',
-                'TiempoEstimado' => 'required|integer|min:1'
+                'TiempoEstimado' => 'required|integer|min:1',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -146,13 +144,13 @@ class TareaControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $tarea,
-                'message' => 'Tarea creada exitosamente'
+                'message' => 'Tarea creada exitosamente',
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear tarea: ' . $e->getMessage()
+                'message' => 'Error al crear tarea: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -165,10 +163,10 @@ class TareaControlador extends Controller
         try {
             $tarea = Tarea::find($id);
 
-            if (!$tarea) {
+            if (! $tarea) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Tarea no encontrada'
+                    'message' => 'Tarea no encontrada',
                 ], 404);
             }
 
@@ -179,14 +177,14 @@ class TareaControlador extends Controller
                 'Estado' => 'sometimes|required|in:pendiente,en_proceso,completada,cancelada',
                 'FechaVencimiento' => 'sometimes|required|date|after:today',
                 'TiempoEstimado' => 'sometimes|required|integer|min:1',
-                'Comentarios' => 'sometimes|string|max:1000'
+                'Comentarios' => 'sometimes|string|max:1000',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -195,13 +193,13 @@ class TareaControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $tarea,
-                'message' => 'Tarea actualizada exitosamente'
+                'message' => 'Tarea actualizada exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar tarea: ' . $e->getMessage()
+                'message' => 'Error al actualizar tarea: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -214,10 +212,10 @@ class TareaControlador extends Controller
         try {
             $tarea = Tarea::find($id);
 
-            if (!$tarea) {
+            if (! $tarea) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Tarea no encontrada'
+                    'message' => 'Tarea no encontrada',
                 ], 404);
             }
 
@@ -225,7 +223,7 @@ class TareaControlador extends Controller
             if (in_array($tarea->Estado, ['en_proceso', 'completada'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No se puede eliminar una tarea en proceso o completada'
+                    'message' => 'No se puede eliminar una tarea en proceso o completada',
                 ], 400);
             }
 
@@ -233,13 +231,13 @@ class TareaControlador extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tarea eliminada exitosamente'
+                'message' => 'Tarea eliminada exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar tarea: ' . $e->getMessage()
+                'message' => 'Error al eliminar tarea: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -251,42 +249,42 @@ class TareaControlador extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'OperadorId' => 'required|exists:Operadores,IdOperador'
+                'OperadorId' => 'required|exists:Operadores,IdOperador',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Operador no válido',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $tarea = Tarea::find($id);
 
-            if (!$tarea) {
+            if (! $tarea) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Tarea no encontrada'
+                    'message' => 'Tarea no encontrada',
                 ], 404);
             }
 
             $tarea->update([
                 'OperadorId' => $request->OperadorId,
                 'Estado' => 'en_proceso',
-                'FechaAsignacion' => now()
+                'FechaAsignacion' => now(),
             ]);
 
             return response()->json([
                 'success' => true,
                 'data' => $tarea,
-                'message' => 'Operador asignado exitosamente a la tarea'
+                'message' => 'Operador asignado exitosamente a la tarea',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al asignar operador: ' . $e->getMessage()
+                'message' => 'Error al asignar operador: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -299,30 +297,30 @@ class TareaControlador extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'Estado' => 'required|in:pendiente,en_proceso,completada,cancelada',
-                'Comentarios' => 'sometimes|string|max:1000'
+                'Comentarios' => 'sometimes|string|max:1000',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Estado no válido',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $tarea = Tarea::find($id);
 
-            if (!$tarea) {
+            if (! $tarea) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Tarea no encontrada'
+                    'message' => 'Tarea no encontrada',
                 ], 404);
             }
 
             $estadoAnterior = $tarea->Estado;
             $datosActualizacion = [
                 'Estado' => $request->Estado,
-                'FechaCambioEstado' => now()
+                'FechaCambioEstado' => now(),
             ];
 
             if ($request->Estado === 'completada') {
@@ -339,13 +337,13 @@ class TareaControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $tarea,
-                'message' => "Estado de la tarea cambiado de '{$estadoAnterior}' a '{$request->Estado}' exitosamente"
+                'message' => "Estado de la tarea cambiado de '{$estadoAnterior}' a '{$request->Estado}' exitosamente",
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al cambiar estado: ' . $e->getMessage()
+                'message' => 'Error al cambiar estado: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -357,14 +355,14 @@ class TareaControlador extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'veeduria_id' => 'required|exists:Veedurias,IdVeeduria'
+                'veeduria_id' => 'required|exists:Veedurias,IdVeeduria',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ID de veeduría no válido',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -376,13 +374,13 @@ class TareaControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $tareas,
-                'message' => 'Tareas de la veeduría obtenidas exitosamente'
+                'message' => 'Tareas de la veeduría obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener tareas: ' . $e->getMessage()
+                'message' => 'Error al obtener tareas: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -411,19 +409,19 @@ class TareaControlador extends Controller
                     ->count(),
                 'promedio_completado' => Tarea::where('Estado', 'completada')
                     ->whereNotNull('TiempoReal')
-                    ->avg('TiempoReal')
+                    ->avg('TiempoReal'),
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $estadisticas,
-                'message' => 'Estadísticas obtenidas exitosamente'
+                'message' => 'Estadísticas obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+                'message' => 'Error al obtener estadísticas: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -445,6 +443,6 @@ class TareaControlador extends Controller
             $numero = 1;
         }
 
-        return $prefijo . $anio . str_pad($numero, 4, '0', STR_PAD_LEFT);
+        return $prefijo.$anio.str_pad($numero, 4, '0', STR_PAD_LEFT);
     }
 }

@@ -6,13 +6,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Database Connection Name
+    | Nombre de Conexión de Base de Datos Predeterminada
     |--------------------------------------------------------------------------
     |
-    | Here you may specify which of the database connections below you wish
-    | to use as your default connection for database operations. This is
-    | the connection which will be utilized unless another connection
-    | is explicitly specified when you execute a query / statement.
+    | Aquí puedes especificar cuál de las conexiones de base de datos a continuación
+    | deseas usar como conexión predeterminada para operaciones de base de datos.
+    | Esta es la conexión que se utilizará a menos que se especifique otra conexión
+    | explícitamente cuando ejecutes una consulta/declaración.
     |
     */
 
@@ -20,12 +20,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Database Connections
+    | Conexiones de Base de Datos
     |--------------------------------------------------------------------------
     |
-    | Below are all of the database connections defined for your application.
-    | An example configuration is provided for each database system which
-    | is supported by Laravel. You're free to add / remove connections.
+    | A continuación se definen todas las conexiones de base de datos para tu aplicación.
+    | Se proporciona una configuración de ejemplo para cada sistema de base de datos
+    | que es compatible con Laravel. Puedes agregar/eliminar conexiones libremente.
     |
     */
 

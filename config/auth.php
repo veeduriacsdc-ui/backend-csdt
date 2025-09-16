@@ -4,12 +4,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication Defaults
+    | Valores Predeterminados de Autenticación
     |--------------------------------------------------------------------------
     |
-    | This option defines the default authentication "guard" and password
-    | reset "broker" for your application. You may change these values
-    | as required, but they're a perfect start for most applications.
+    | Esta opción define el "guard" de autenticación predeterminado y el
+    | "broker" de restablecimiento de contraseña para tu aplicación. Puedes cambiar
+    | estos valores según sea necesario, pero son un excelente punto de partida
+    | para la mayoría de las aplicaciones.
     |
     */
 
@@ -20,18 +21,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication Guards
+    | Guards de Autenticación
     |--------------------------------------------------------------------------
     |
-    | Next, you may define every authentication guard for your application.
-    | Of course, a great default configuration has been defined for you
-    | which utilizes session storage plus the Eloquent user provider.
+    | A continuación, puedes definir cada guard de autenticación para tu aplicación.
+    | Por supuesto, se ha definido una excelente configuración predeterminada para ti
+    | que utiliza almacenamiento de sesión más el proveedor de usuario Eloquent.
     |
-    | All authentication guards have a user provider, which defines how the
-    | users are actually retrieved out of your database or other storage
-    | system used by the application. Typically, Eloquent is utilized.
+    | Todos los guards de autenticación tienen un proveedor de usuario, que define cómo
+    | los usuarios se recuperan realmente de tu base de datos u otro sistema de
+    | almacenamiento utilizado por la aplicación. Típicamente, se utiliza Eloquent.
     |
-    | Supported: "session"
+    | Compatible: "session"
     |
     */
 

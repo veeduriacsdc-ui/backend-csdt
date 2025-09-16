@@ -2,12 +2,11 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use App\Models\Sesion;
 use App\Models\Cliente;
 use App\Models\Operador;
+use App\Models\Sesion;
+use Closure;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class VerificarRol
@@ -15,72 +14,71 @@ class VerificarRol
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
-     * @param  string  $rol
      * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
-    public function handle(Request $request, Closure $next, string $rol = null)
+    public function handle(Request $request, Closure $next, ?string $rol = null)
     {
         try {
             // Verificar token de autenticación
-            if (!$request->bearerToken()) {
+            if (! $request->bearerToken()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Token de autenticación requerido',
-                    'error' => 'UNAUTHORIZED'
+                    'error' => 'UNAUTHORIZED',
                 ], 401);
             }
 
             // Obtener usuario autenticado
             $usuario = $request->user();
-            
-            if (!$usuario) {
+
+            if (! $usuario) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Usuario no autenticado',
-                    'error' => 'UNAUTHENTICATED'
+                    'error' => 'UNAUTHENTICATED',
                 ], 401);
             }
 
             // Obtener sesión activa
             $sesion = Sesion::where('usuario_id', $usuario->id)
-                           ->where('estado_sesion', 'activa')
-                           ->first();
+                ->where('estado_sesion', 'activa')
+                ->first();
 
-            if (!$sesion) {
+            if (! $sesion) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Sesión no válida o expirada',
-                    'error' => 'INVALID_SESSION'
+                    'error' => 'INVALID_SESSION',
                 ], 401);
             }
 
             // Verificar que la sesión no haya expirado
             if ($sesion->fecha_expiracion && now()->isAfter($sesion->fecha_expiracion)) {
                 $sesion->cerrarSesion();
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Sesión expirada',
-                    'error' => 'SESSION_EXPIRED'
+                    'error' => 'SESSION_EXPIRED',
                 ], 401);
             }
 
             // Si no se especifica rol, solo verificar autenticación
-            if (!$rol) {
+            if (! $rol) {
                 return $next($request);
             }
 
             // Verificar rol específico
             $rolUsuario = $sesion->rol;
-            
-            if (!$this->tieneRol($rolUsuario, $rol)) {
+
+            if (! $this->tieneRol($rolUsuario, $rol)) {
                 Log::warning('Acceso denegado por rol', [
                     'usuario_id' => $usuario->id,
                     'rol_requerido' => $rol,
                     'rol_usuario' => $rolUsuario,
                     'ruta' => $request->path(),
-                    'ip' => $request->ip()
+                    'ip' => $request->ip(),
                 ]);
 
                 return response()->json([
@@ -88,20 +86,20 @@ class VerificarRol
                     'message' => 'Acceso denegado. Rol insuficiente.',
                     'error' => 'INSUFFICIENT_ROLE',
                     'rol_requerido' => $rol,
-                    'rol_actual' => $rolUsuario
+                    'rol_actual' => $rolUsuario,
                 ], 403);
             }
 
             // Verificar permisos específicos si se requieren
             if ($request->has('permiso_requerido')) {
                 $permisoRequerido = $request->input('permiso_requerido');
-                
-                if (!$sesion->tienePermiso($permisoRequerido)) {
+
+                if (! $sesion->tienePermiso($permisoRequerido)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Permiso insuficiente para esta acción',
                         'error' => 'INSUFFICIENT_PERMISSION',
-                        'permiso_requerido' => $permisoRequerido
+                        'permiso_requerido' => $permisoRequerido,
                     ], 403);
                 }
             }
@@ -116,23 +114,23 @@ class VerificarRol
                     'rol' => $rolUsuario,
                     'tipo_usuario' => $sesion->tipo_usuario,
                     'permisos' => $sesion->permisos,
-                    'nivel_acceso' => $sesion->nivel_acceso ?? 1
-                ]
+                    'nivel_acceso' => $sesion->nivel_acceso ?? 1,
+                ],
             ]);
 
             return $next($request);
 
         } catch (\Exception $e) {
-            Log::error('Error en middleware VerificarRol: ' . $e->getMessage(), [
+            Log::error('Error en middleware VerificarRol: '.$e->getMessage(), [
                 'request_path' => $request->path(),
                 'user_agent' => $request->userAgent(),
-                'ip' => $request->ip()
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno de autenticación',
-                'error' => 'INTERNAL_ERROR'
+                'error' => 'INTERNAL_ERROR',
             ], 500);
         }
     }
@@ -146,7 +144,7 @@ class VerificarRol
         $jerarquiaRoles = [
             'administrador' => 3,
             'operador' => 2,
-            'cliente' => 1
+            'cliente' => 1,
         ];
 
         $nivelUsuario = $jerarquiaRoles[$rolUsuario] ?? 0;
@@ -161,7 +159,8 @@ class VerificarRol
      */
     public static function tieneRolEspecifico(string $rolUsuario, string $rolRequerido): bool
     {
-        $instancia = new self();
+        $instancia = new self;
+
         return $instancia->tieneRol($rolUsuario, $rolRequerido);
     }
 
@@ -175,6 +174,7 @@ class VerificarRol
                 return true;
             }
         }
+
         return false;
     }
 

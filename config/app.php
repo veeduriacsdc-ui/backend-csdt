@@ -4,25 +4,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Application Name
+    | Nombre de la Aplicación
     |--------------------------------------------------------------------------
     |
-    | This value is the name of your application, which will be used when the
-    | framework needs to place the application's name in a notification or
-    | other UI elements where an application name needs to be displayed.
+    | Este valor es el nombre de tu aplicación, que será utilizado cuando el
+    | framework necesite colocar el nombre de la aplicación en una notificación o
+    | otros elementos de interfaz donde se necesite mostrar el nombre de la aplicación.
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'CONSEJO SOCIAL DE VEEDURÍA Y DESARROLLO TERRITORIAL'),
 
     /*
     |--------------------------------------------------------------------------
-    | Application Environment
+    | Entorno de la Aplicación
     |--------------------------------------------------------------------------
     |
-    | This value determines the "environment" your application is currently
-    | running in. This may determine how you prefer to configure various
-    | services the application utilizes. Set this in your ".env" file.
+    | Este valor determina el "entorno" en el que tu aplicación está ejecutándose
+    | actualmente. Esto puede determinar cómo prefieres configurar varios
+    | servicios que la aplicación utiliza. Establece esto en tu archivo ".env".
     |
     */
 
@@ -30,12 +30,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Application Debug Mode
+    | Modo Debug de la Aplicación
     |--------------------------------------------------------------------------
     |
-    | When your application is in debug mode, detailed error messages with
-    | stack traces will be shown on every error that occurs within your
-    | application. If disabled, a simple generic error page is shown.
+    | Cuando tu aplicación está en modo debug, se mostrarán mensajes de error detallados con
+    | trazas de pila en cada error que ocurra dentro de tu aplicación. Si está deshabilitado,
+    | se muestra una página de error genérica simple.
     |
     */
 

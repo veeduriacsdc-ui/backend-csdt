@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Archivo;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class ArchivoControlador extends Controller
 {
@@ -44,9 +43,9 @@ class ArchivoControlador extends Controller
             if ($request->filled('buscar')) {
                 $buscar = $request->buscar;
                 $query->where(function ($q) use ($buscar) {
-                    $q->where('Nombre', 'like', '%' . $buscar . '%')
-                      ->orWhere('Descripcion', 'like', '%' . $buscar . '%')
-                      ->orWhere('Codigo', 'like', '%' . $buscar . '%');
+                    $q->where('Nombre', 'like', '%'.$buscar.'%')
+                        ->orWhere('Descripcion', 'like', '%'.$buscar.'%')
+                        ->orWhere('Codigo', 'like', '%'.$buscar.'%');
                 });
             }
 
@@ -68,13 +67,13 @@ class ArchivoControlador extends Controller
                     'per_page' => $archivos->perPage(),
                     'total' => $archivos->total(),
                 ],
-                'message' => 'Archivos obtenidos exitosamente'
+                'message' => 'Archivos obtenidos exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener archivos: ' . $e->getMessage()
+                'message' => 'Error al obtener archivos: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -87,23 +86,23 @@ class ArchivoControlador extends Controller
         try {
             $archivo = Archivo::with(['cliente', 'operador'])->find($id);
 
-            if (!$archivo) {
+            if (! $archivo) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Archivo no encontrado'
+                    'message' => 'Archivo no encontrado',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
                 'data' => $archivo,
-                'message' => 'Archivo obtenido exitosamente'
+                'message' => 'Archivo obtenido exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener archivo: ' . $e->getMessage()
+                'message' => 'Error al obtener archivo: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -122,14 +121,14 @@ class ArchivoControlador extends Controller
                 'ClienteId' => 'sometimes|exists:Clientes,IdCliente',
                 'OperadorId' => 'sometimes|exists:Operadores,IdOperador',
                 'Categoria' => 'sometimes|string|max:100',
-                'Privado' => 'boolean'
+                'Privado' => 'boolean',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -140,8 +139,8 @@ class ArchivoControlador extends Controller
             $mimeType = $archivo->getMimeType();
 
             // Generar nombre único para el archivo
-            $nombreArchivo = uniqid() . '_' . time() . '.' . $extension;
-            
+            $nombreArchivo = uniqid().'_'.time().'.'.$extension;
+
             // Guardar archivo en storage
             $ruta = $archivo->storeAs('archivos', $nombreArchivo, 'public');
 
@@ -159,13 +158,13 @@ class ArchivoControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $archivoModel,
-                'message' => 'Archivo subido exitosamente'
+                'message' => 'Archivo subido exitosamente',
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al subir archivo: ' . $e->getMessage()
+                'message' => 'Error al subir archivo: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -178,10 +177,10 @@ class ArchivoControlador extends Controller
         try {
             $archivo = Archivo::find($id);
 
-            if (!$archivo) {
+            if (! $archivo) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Archivo no encontrado'
+                    'message' => 'Archivo no encontrado',
                 ], 404);
             }
 
@@ -189,14 +188,14 @@ class ArchivoControlador extends Controller
                 'Nombre' => 'sometimes|required|string|max:255',
                 'Descripcion' => 'sometimes|string|max:1000',
                 'Categoria' => 'sometimes|string|max:100',
-                'Privado' => 'sometimes|boolean'
+                'Privado' => 'sometimes|boolean',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -205,13 +204,13 @@ class ArchivoControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $archivo,
-                'message' => 'Archivo actualizado exitosamente'
+                'message' => 'Archivo actualizado exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar archivo: ' . $e->getMessage()
+                'message' => 'Error al actualizar archivo: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -224,10 +223,10 @@ class ArchivoControlador extends Controller
         try {
             $archivo = Archivo::find($id);
 
-            if (!$archivo) {
+            if (! $archivo) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Archivo no encontrado'
+                    'message' => 'Archivo no encontrado',
                 ], 404);
             }
 
@@ -240,13 +239,13 @@ class ArchivoControlador extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Archivo eliminado exitosamente'
+                'message' => 'Archivo eliminado exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar archivo: ' . $e->getMessage()
+                'message' => 'Error al eliminar archivo: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -259,18 +258,18 @@ class ArchivoControlador extends Controller
         try {
             $archivo = Archivo::find($id);
 
-            if (!$archivo) {
+            if (! $archivo) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Archivo no encontrado'
+                    'message' => 'Archivo no encontrado',
                 ], 404);
             }
 
             // Verificar si el archivo existe físicamente
-            if (!Storage::disk('public')->exists($archivo->Ruta)) {
+            if (! Storage::disk('public')->exists($archivo->Ruta)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'El archivo físico no existe'
+                    'message' => 'El archivo físico no existe',
                 ], 404);
             }
 
@@ -287,15 +286,15 @@ class ArchivoControlador extends Controller
                     'tamano' => $archivo->Tamano,
                     'mime_type' => $archivo->MimeType,
                     'url_descarga' => $urlDescarga,
-                    'fecha_subida' => $archivo->FechaSubida
+                    'fecha_subida' => $archivo->FechaSubida,
                 ],
-                'message' => 'Archivo disponible para descarga'
+                'message' => 'Archivo disponible para descarga',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al descargar archivo: ' . $e->getMessage()
+                'message' => 'Error al descargar archivo: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -307,14 +306,14 @@ class ArchivoControlador extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'cliente_id' => 'required|exists:Clientes,IdCliente'
+                'cliente_id' => 'required|exists:Clientes,IdCliente',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ID de cliente no válido',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -325,13 +324,13 @@ class ArchivoControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $archivos,
-                'message' => 'Archivos del cliente obtenidos exitosamente'
+                'message' => 'Archivos del cliente obtenidos exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener archivos: ' . $e->getMessage()
+                'message' => 'Error al obtener archivos: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -359,19 +358,19 @@ class ArchivoControlador extends Controller
                 'tamano_total' => Archivo::sum('Tamano'),
                 'tamano_promedio' => Archivo::avg('Tamano'),
                 'archivos_privados' => Archivo::where('Privado', true)->count(),
-                'archivos_publicos' => Archivo::where('Privado', false)->count()
+                'archivos_publicos' => Archivo::where('Privado', false)->count(),
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $estadisticas,
-                'message' => 'Estadísticas obtenidas exitosamente'
+                'message' => 'Estadísticas obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+                'message' => 'Error al obtener estadísticas: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -393,6 +392,6 @@ class ArchivoControlador extends Controller
             $numero = 1;
         }
 
-        return $prefijo . $anio . str_pad($numero, 4, '0', STR_PAD_LEFT);
+        return $prefijo.$anio.str_pad($numero, 4, '0', STR_PAD_LEFT);
     }
 }

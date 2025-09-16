@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Operador;
 use App\Models\Cliente;
-use App\Models\Veeduria;
 use App\Models\Donacion;
+use App\Models\Operador;
 use App\Models\Tarea;
-use Illuminate\Http\Request;
+use App\Models\Veeduria;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
 
 class AdministradorControlador extends Controller
 {
@@ -50,20 +50,20 @@ class AdministradorControlador extends Controller
                         'en_proceso' => Tarea::where('Estado', 'en_proceso')->count(),
                         'completadas' => Tarea::where('Estado', 'completada')->count(),
                         'atrasadas' => Tarea::where('FechaVencimiento', '<', now())->where('Estado', '!=', 'completada')->count(),
-                    ]
+                    ],
                 ];
             });
 
             return response()->json([
                 'success' => true,
                 'data' => $estadisticas,
-                'message' => 'Dashboard administrativo obtenido exitosamente'
+                'message' => 'Dashboard administrativo obtenido exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener dashboard: ' . $e->getMessage()
+                'message' => 'Error al obtener dashboard: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -82,15 +82,15 @@ class AdministradorControlador extends Controller
             }
 
             if ($request->filled('profesion')) {
-                $query->where('Profesion', 'like', '%' . $request->profesion . '%');
+                $query->where('Profesion', 'like', '%'.$request->profesion.'%');
             }
 
             if ($request->filled('buscar')) {
                 $buscar = $request->buscar;
                 $query->where(function ($q) use ($buscar) {
-                    $q->where('Nombres', 'like', '%' . $buscar . '%')
-                      ->orWhere('Apellidos', 'like', '%' . $buscar . '%')
-                      ->orWhere('Correo', 'like', '%' . $buscar . '%');
+                    $q->where('Nombres', 'like', '%'.$buscar.'%')
+                        ->orWhere('Apellidos', 'like', '%'.$buscar.'%')
+                        ->orWhere('Correo', 'like', '%'.$buscar.'%');
                 });
             }
 
@@ -112,13 +112,13 @@ class AdministradorControlador extends Controller
                     'per_page' => $operadores->perPage(),
                     'total' => $operadores->total(),
                 ],
-                'message' => 'Operadores obtenidos exitosamente'
+                'message' => 'Operadores obtenidos exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener operadores: ' . $e->getMessage()
+                'message' => 'Error al obtener operadores: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -131,23 +131,23 @@ class AdministradorControlador extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'Estado' => 'required|in:activo,inactivo,suspendido',
-                'Motivo' => 'required|string|max:500'
+                'Motivo' => 'required|string|max:500',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $operador = Operador::find($id);
 
-            if (!$operador) {
+            if (! $operador) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Operador no encontrado'
+                    'message' => 'Operador no encontrado',
                 ], 404);
             }
 
@@ -155,7 +155,7 @@ class AdministradorControlador extends Controller
             $operador->update([
                 'Estado' => $request->Estado,
                 'MotivoCambioEstado' => $request->Motivo,
-                'FechaCambioEstado' => now()
+                'FechaCambioEstado' => now(),
             ]);
 
             // Limpiar cache del dashboard
@@ -164,13 +164,13 @@ class AdministradorControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $operador,
-                'message' => "Estado del operador cambiado de '{$estadoAnterior}' a '{$request->Estado}' exitosamente"
+                'message' => "Estado del operador cambiado de '{$estadoAnterior}' a '{$request->Estado}' exitosamente",
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al cambiar estado: ' . $e->getMessage()
+                'message' => 'Error al cambiar estado: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -212,19 +212,19 @@ class AdministradorControlador extends Controller
                 'por_fecha' => $query->selectRaw('DATE(created_at) as fecha, COUNT(*) as total')
                     ->groupBy('fecha')
                     ->orderBy('fecha')
-                    ->get()
+                    ->get(),
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $estadisticas,
-                'message' => 'Estadísticas detalladas obtenidas exitosamente'
+                'message' => 'Estadísticas detalladas obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+                'message' => 'Error al obtener estadísticas: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -239,14 +239,14 @@ class AdministradorControlador extends Controller
                 'tipo' => 'required|in:veedurias,donaciones,tareas,usuarios,general',
                 'formato' => 'required|in:json,pdf,excel',
                 'fecha_inicio' => 'required|date',
-                'fecha_fin' => 'required|date|after:fecha_inicio'
+                'fecha_fin' => 'required|date|after:fecha_inicio',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -258,19 +258,19 @@ class AdministradorControlador extends Controller
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin' => $request->fecha_fin,
                 'generado_en' => now()->toISOString(),
-                'estado' => 'generado'
+                'estado' => 'generado',
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $reporte,
-                'message' => 'Reporte generado exitosamente'
+                'message' => 'Reporte generado exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al generar reporte: ' . $e->getMessage()
+                'message' => 'Error al generar reporte: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -290,24 +290,24 @@ class AdministradorControlador extends Controller
                 ],
                 'base_datos' => [
                     'conexion' => config('database.default'),
-                    'driver' => config('database.connections.' . config('database.default') . '.driver'),
+                    'driver' => config('database.connections.'.config('database.default').'.driver'),
                 ],
                 'cache' => [
                     'driver' => config('cache.default'),
                     'ttl_dashboard' => 300, // 5 minutos
-                ]
+                ],
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $configuracion,
-                'message' => 'Configuración del sistema obtenida exitosamente'
+                'message' => 'Configuración del sistema obtenida exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener configuración: ' . $e->getMessage()
+                'message' => 'Error al obtener configuración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -322,13 +322,13 @@ class AdministradorControlador extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Cache del sistema limpiado exitosamente'
+                'message' => 'Cache del sistema limpiado exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al limpiar cache: ' . $e->getMessage()
+                'message' => 'Error al limpiar cache: '.$e->getMessage(),
             ], 500);
         }
     }

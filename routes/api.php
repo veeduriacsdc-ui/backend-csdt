@@ -1,21 +1,20 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\ClienteControlador;
-use App\Http\Controllers\Api\OperadorControlador;
 use App\Http\Controllers\Api\AdministradorControlador;
-use App\Http\Controllers\Api\OperacionControlador;
-use App\Http\Controllers\Api\TareaControlador;
-use App\Http\Controllers\Api\NarracionConsejoIaControlador;
-use App\Http\Controllers\Api\DonacionControlador;
 use App\Http\Controllers\Api\ArchivoControlador;
-use App\Http\Controllers\Api\NotificacionControlador;
-use App\Http\Controllers\Api\LogAuditoriaControlador;
-use App\Http\Controllers\Api\ReporteControlador;
+use App\Http\Controllers\Api\ClienteControlador;
 use App\Http\Controllers\Api\ConfiguracionControlador;
-use App\Http\Controllers\Api\SesionControlador;
 use App\Http\Controllers\Api\GestionUsuariosControlador;
+use App\Http\Controllers\Api\NarracionConsejoIaControlador;
+use App\Http\Controllers\Api\OperadorController;
+use App\Http\Controllers\Api\TareaControlador;
+use App\Http\Controllers\Api\EstadisticasController;
+use App\Http\Controllers\Api\UsuarioSistemaController;
+use App\Http\Controllers\Api\DonacionController;
+use App\Http\Controllers\Api\RegistroControlador;
+use App\Http\Controllers\VozController;
+use App\Http\Controllers\VozInteligenteController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,21 +32,16 @@ Route::get('/health', function () {
         'success' => true,
         'message' => 'API del CONSEJO SOCIAL DE VEEDURÍA Y DESARROLLO TERRITORIAL funcionando correctamente',
         'timestamp' => now()->toISOString(),
-        'version' => '1.0.0'
+        'version' => '1.0.0',
     ]);
 });
 
-// Rutas de autenticación unificada
-Route::prefix('sesion')->group(function () {
-    Route::post('/iniciar', [SesionControlador::class, 'iniciarSesion']);
-    Route::post('/registrar', [SesionControlador::class, 'registrarUsuario']);
-    Route::post('/recuperar-contrasena', [SesionControlador::class, 'recuperarContrasena']);
-    Route::post('/cambiar-contrasena', [SesionControlador::class, 'cambiarContrasena']);
-    Route::post('/renovar', [SesionControlador::class, 'renovarSesion']);
-    Route::get('/info', [SesionControlador::class, 'obtenerSesion']);
-    Route::post('/cerrar', [SesionControlador::class, 'cerrarSesion']);
-    Route::get('/estadisticas', [SesionControlador::class, 'obtenerEstadisticas']);
-    Route::post('/crear-admin-inicial', [SesionControlador::class, 'crearAdministradorInicial']);
+// Rutas de autenticación unificada (eliminadas - usar /auth)
+
+// Rutas de registro público
+Route::prefix('registro')->group(function () {
+    Route::post('/', [RegistroControlador::class, 'registrar']);
+    Route::post('/verificar-email', [RegistroControlador::class, 'verificarEmail']);
 });
 
 // Rutas de gestión de usuarios (solo administradores)
@@ -61,20 +55,59 @@ Route::prefix('gestion-usuarios')->middleware(['auth:sanctum', 'verificar.rol:ad
     Route::post('/{id}/restaurar', [GestionUsuariosControlador::class, 'restaurarUsuario']);
 });
 
-// Rutas de autenticación legacy (mantener compatibilidad)
+// Rutas de administración de registros (solo administradores)
+Route::prefix('admin-registros')->middleware(['auth:sanctum', 'verificar.rol:administrador'])->group(function () {
+    Route::get('/pendientes', [RegistroControlador::class, 'obtenerPendientes']);
+    Route::post('/{id}/aprobar', [RegistroControlador::class, 'aprobar']);
+    Route::post('/{id}/rechazar', [RegistroControlador::class, 'rechazar']);
+});
+
+// Rutas del sistema de usuarios unificado
+Route::prefix('usuarios-sistema')->middleware(['auth:sanctum'])->group(function () {
+    // Rutas públicas para usuarios autenticados
+    Route::get('/estadisticas', [UsuarioSistemaController::class, 'estadisticas']);
+    
+    // Rutas de administradores
+    Route::middleware('verificar.rol:administrador')->group(function () {
+        Route::get('/', [UsuarioSistemaController::class, 'index']);
+        Route::get('/{id}', [UsuarioSistemaController::class, 'show']);
+        Route::post('/', [UsuarioSistemaController::class, 'store']);
+        Route::put('/{id}', [UsuarioSistemaController::class, 'update']);
+        Route::delete('/{id}', [UsuarioSistemaController::class, 'destroy']);
+        Route::put('/{id}/cambiar-rol', [UsuarioSistemaController::class, 'cambiarRol']);
+        Route::put('/{id}/cambiar-estado', [UsuarioSistemaController::class, 'cambiarEstado']);
+    });
+});
+
+// Rutas del Dashboard con datos en tiempo real (eliminadas - usar /dashboard/resumen)
+
+// Rutas de autenticación unificada
 Route::prefix('auth')->group(function () {
     Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
-    Route::post('/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
+    Route::post('/register-cliente', [\App\Http\Controllers\Api\AuthController::class, 'registerCliente']);
+    Route::post('/register-operador', [\App\Http\Controllers\Api\AuthController::class, 'registerOperador'])->middleware('auth:sanctum');
+    Route::post('/validar-campos', [\App\Http\Controllers\Api\AuthController::class, 'validarCampos']);
     Route::post('/verificar-email', [\App\Http\Controllers\Api\AuthController::class, 'verificarEmail']);
     Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
-    Route::post('/refresh', [\App\Http\Controllers\Api\AuthController::class, 'refresh'])->middleware('auth:sanctum');
     Route::get('/me', [\App\Http\Controllers\Api\AuthController::class, 'me'])->middleware('auth:sanctum');
-    Route::post('/cambiar-password', [\App\Http\Controllers\Api\AuthController::class, 'cambiarPassword'])->middleware('auth:sanctum');
+    Route::post('/cambiar-contrasena', [\App\Http\Controllers\Api\AuthController::class, 'cambiarContrasena'])->middleware('auth:sanctum');
+    Route::post('/recuperar-contrasena', [\App\Http\Controllers\Api\AuthController::class, 'recuperarContrasena']);
+    Route::post('/resetear-contrasena', [\App\Http\Controllers\Api\AuthController::class, 'resetearContrasena']);
+});
+
+// Rutas de autenticación legacy (mantener compatibilidad)
+Route::prefix('auth-legacy')->group(function () {
+    Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+    Route::post('/register', [\App\Http\Controllers\Api\AuthController::class, 'registerCliente']);
+    Route::post('/verificar-email', [\App\Http\Controllers\Api\AuthController::class, 'verificarEmail']);
+    Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
+    Route::get('/me', [\App\Http\Controllers\Api\AuthController::class, 'me'])->middleware('auth:sanctum');
+    Route::post('/cambiar-password', [\App\Http\Controllers\Api\AuthController::class, 'cambiarContrasena'])->middleware('auth:sanctum');
 });
 
 // Rutas públicas (sin autenticación)
 Route::prefix('publico')->group(function () {
-    
+
     // Rutas de CONSEJOIA (públicas)
     Route::prefix('consejoia')->group(function () {
         Route::post('/mejorar-texto', [NarracionConsejoIaControlador::class, 'MejorarConIa']);
@@ -84,13 +117,6 @@ Route::prefix('publico')->group(function () {
         Route::get('/estadisticas', [NarracionConsejoIaControlador::class, 'ObtenerEstadisticas']);
     });
 
-    // Rutas de donaciones públicas
-    Route::prefix('donaciones')->group(function () {
-        Route::get('/', [DonacionControlador::class, 'ObtenerLista']);
-        Route::get('/{id}', [DonacionControlador::class, 'ObtenerPorId']);
-        Route::post('/', [DonacionControlador::class, 'Crear']);
-        Route::get('/estadisticas', [DonacionControlador::class, 'ObtenerEstadisticas']);
-    });
 
     // Rutas de clientes públicas
     Route::prefix('clientes')->group(function () {
@@ -98,53 +124,47 @@ Route::prefix('publico')->group(function () {
         Route::post('/verificar-correo', [ClienteControlador::class, 'VerificarCorreo']);
     });
 
-    // Rutas de operadores públicas
-    Route::prefix('operadores')->group(function () {
-        Route::post('/', [OperadorControlador::class, 'Crear']);
-        Route::post('/verificar-perfil', [OperadorControlador::class, 'VerificarPerfil']);
-    });
-
     // Datos de referencia públicos
     Route::get('/tipos-veeduria', function () {
-            return response()->json([
-                'success' => true,
-                'data' => [
+        return response()->json([
+            'success' => true,
+            'data' => [
                 'ambiental' => 'Ambiental',
                 'social' => 'Social',
                 'economica' => 'Económica',
                 'politica' => 'Política',
-                'administrativa' => 'Administrativa'
+                'administrativa' => 'Administrativa',
             ],
-            'message' => 'Tipos de veeduría obtenidos exitosamente'
-    ]);
-});
+            'message' => 'Tipos de veeduría obtenidos exitosamente',
+        ]);
+    });
 
     Route::get('/estados-veeduria', function () {
-    return response()->json([
-        'success' => true,
-        'data' => [
+        return response()->json([
+            'success' => true,
+            'data' => [
                 'pendiente' => 'Pendiente',
                 'en_proceso' => 'En Proceso',
                 'completada' => 'Completada',
                 'cancelada' => 'Cancelada',
-                'archivada' => 'Archivada'
+                'archivada' => 'Archivada',
             ],
-            'message' => 'Estados de veeduría obtenidos exitosamente'
-    ]);
-});
+            'message' => 'Estados de veeduría obtenidos exitosamente',
+        ]);
+    });
 
     Route::get('/prioridades-tarea', function () {
-    return response()->json([
-        'success' => true,
-        'data' => [
-            1 => 'Baja',
-            2 => 'Media',
-            3 => 'Alta',
-            4 => 'Crítica'
-        ],
-            'message' => 'Prioridades de tarea obtenidas exitosamente'
-    ]);
-});
+        return response()->json([
+            'success' => true,
+            'data' => [
+                1 => 'Baja',
+                2 => 'Media',
+                3 => 'Alta',
+                4 => 'Crítica',
+            ],
+            'message' => 'Prioridades de tarea obtenidas exitosamente',
+        ]);
+    });
 
     Route::get('/categorias-veeduria', function () {
         return response()->json([
@@ -157,16 +177,16 @@ Route::prefix('publico')->group(function () {
                 'seguridad' => 'Seguridad',
                 'transporte' => 'Transporte',
                 'medio_ambiente' => 'Medio Ambiente',
-                'desarrollo_social' => 'Desarrollo Social'
+                'desarrollo_social' => 'Desarrollo Social',
             ],
-            'message' => 'Categorías de veeduría obtenidas exitosamente'
+            'message' => 'Categorías de veeduría obtenidas exitosamente',
         ]);
     });
 });
 
 // Rutas protegidas por autenticación
 Route::middleware('auth:sanctum')->group(function () {
-    
+
     // Rutas de clientes autenticados
     Route::prefix('clientes')->group(function () {
         Route::get('/', [ClienteControlador::class, 'ObtenerLista']);
@@ -183,18 +203,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rutas de operadores autenticados
     Route::prefix('operadores')->group(function () {
-        Route::get('/', [OperadorControlador::class, 'ObtenerLista']);
-        Route::get('/{id}', [OperadorControlador::class, 'ObtenerPorId']);
-        Route::put('/{id}', [OperadorControlador::class, 'Actualizar']);
-        Route::delete('/{id}', [OperadorControlador::class, 'Eliminar']);
-        Route::post('/{id}/restaurar', [OperadorControlador::class, 'Restaurar']);
-        Route::put('/{id}/estado', [OperadorControlador::class, 'CambiarEstado']);
-        Route::post('/{id}/verificar', [OperadorControlador::class, 'Verificar']);
-        Route::post('/{id}/asignar-supervisor', [OperadorControlador::class, 'AsignarSupervisor']);
-        Route::get('/{id}/estadisticas', [OperadorControlador::class, 'ObtenerEstadisticas']);
-        Route::get('/{id}/veedurias-asignadas', [OperadorControlador::class, 'ObtenerVeeduriasAsignadas']);
-        Route::get('/{id}/tareas-asignadas', [OperadorControlador::class, 'ObtenerTareasAsignadas']);
-        Route::get('/{id}/subordinados', [OperadorControlador::class, 'ObtenerSubordinados']);
+        Route::get('/', [OperadorController::class, 'ObtenerLista']);
+        Route::get('/{id}', [OperadorController::class, 'ObtenerPorId']);
+        Route::put('/{id}', [OperadorController::class, 'Actualizar']);
+        Route::delete('/{id}', [OperadorController::class, 'Eliminar']);
+        Route::post('/{id}/restaurar', [OperadorController::class, 'Restaurar']);
+        Route::put('/{id}/estado', [OperadorController::class, 'CambiarEstado']);
+        Route::post('/{id}/verificar', [OperadorController::class, 'Verificar']);
+        Route::post('/{id}/asignar-supervisor', [OperadorController::class, 'AsignarSupervisor']);
+        Route::get('/{id}/estadisticas', [OperadorController::class, 'ObtenerEstadisticas']);
+        Route::get('/{id}/veedurias-asignadas', [OperadorController::class, 'ObtenerVeeduriasAsignadas']);
+        Route::get('/{id}/tareas-asignadas', [OperadorController::class, 'ObtenerTareasAsignadas']);
+        Route::get('/{id}/subordinados', [OperadorController::class, 'ObtenerSubordinados']);
     });
 
     // Rutas de administradores (acceso especial)
@@ -208,22 +228,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/estadisticas', [AdministradorControlador::class, 'ObtenerEstadisticas']);
     });
 
-    // Rutas de veedurías
-    Route::prefix('veedurias')->group(function () {
-        Route::get('/', [VeeduriaControlador::class, 'ObtenerLista']);
-        Route::get('/{id}', [VeeduriaControlador::class, 'ObtenerPorId']);
-        Route::post('/', [VeeduriaControlador::class, 'Crear']);
-        Route::put('/{id}', [VeeduriaControlador::class, 'Actualizar']);
-        Route::delete('/{id}', [VeeduriaControlador::class, 'Eliminar']);
-        Route::post('/{id}/restaurar', [VeeduriaControlador::class, 'Restaurar']);
-        Route::post('/{id}/asignar-operador', [VeeduriaControlador::class, 'AsignarOperador']);
-        Route::put('/{id}/estado', [VeeduriaControlador::class, 'CambiarEstado']);
-        Route::post('/{id}/agregar-documento', [VeeduriaControlador::class, 'AgregarDocumento']);
-        Route::post('/{id}/agregar-etiqueta', [VeeduriaControlador::class, 'AgregarEtiqueta']);
-        Route::get('/{id}/estadisticas', [VeeduriaControlador::class, 'ObtenerEstadisticas']);
-        Route::get('/{id}/tareas', [VeeduriaControlador::class, 'ObtenerTareas']);
-        Route::get('/{id}/archivos', [VeeduriaControlador::class, 'ObtenerArchivos']);
+    // Rutas de PQRSFD
+    Route::prefix('pqrsfd')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\PQRSFDController::class, 'index']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\PQRSFDController::class, 'show']);
+        Route::post('/', [\App\Http\Controllers\Api\PQRSFDController::class, 'store']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\PQRSFDController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\PQRSFDController::class, 'destroy']);
+        Route::post('/{id}/asignar-operador', [\App\Http\Controllers\Api\PQRSFDController::class, 'asignarOperador']);
+        Route::post('/{id}/radicar', [\App\Http\Controllers\Api\PQRSFDController::class, 'radicar']);
+        Route::post('/{id}/cerrar', [\App\Http\Controllers\Api\PQRSFDController::class, 'cerrar']);
+        Route::post('/{id}/cancelar', [\App\Http\Controllers\Api\PQRSFDController::class, 'cancelar']);
+        Route::post('/{id}/agregar-comentario', [\App\Http\Controllers\Api\PQRSFDController::class, 'agregarComentario']);
+        Route::get('/estadisticas/general', [\App\Http\Controllers\Api\PQRSFDController::class, 'estadisticas']);
     });
+
+    // Rutas de actividades de caso (eliminadas)
 
     // Rutas de tareas
     Route::prefix('tareas')->group(function () {
@@ -256,16 +276,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rutas de donaciones (autenticadas)
     Route::prefix('donaciones')->group(function () {
-        Route::put('/{id}', [DonacionControlador::class, 'Actualizar']);
-        Route::delete('/{id}', [DonacionControlador::class, 'Eliminar']);
-        Route::put('/{id}/estado', [DonacionControlador::class, 'CambiarEstado']);
-        Route::post('/{id}/validar', [DonacionControlador::class, 'Validar']);
-        Route::post('/{id}/rechazar', [DonacionControlador::class, 'Rechazar']);
-        Route::get('/{id}/estadisticas', [DonacionControlador::class, 'ObtenerEstadisticas']);
-        Route::get('/por-cliente/{clienteId}', [DonacionControlador::class, 'ObtenerPorCliente']);
-        Route::get('/por-operador/{operadorId}', [DonacionControlador::class, 'ObtenerPorOperador']);
-        Route::get('/pendientes-validacion', [DonacionControlador::class, 'ObtenerPendientesValidacion']);
-        Route::get('/validadas', [DonacionControlador::class, 'ObtenerValidadas']);
+        Route::put('/{id}', [\App\Http\Controllers\Api\DonacionController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\DonacionController::class, 'destroy']);
+        Route::post('/{id}/validar', [\App\Http\Controllers\Api\DonacionController::class, 'validar']);
+        Route::post('/{id}/rechazar', [\App\Http\Controllers\Api\DonacionController::class, 'rechazar']);
+        Route::get('/por-cliente/{clienteId}', [\App\Http\Controllers\Api\DonacionController::class, 'index']);
+        Route::get('/por-operador/{operadorId}', [\App\Http\Controllers\Api\DonacionController::class, 'index']);
+        Route::get('/pendientes-validacion', [\App\Http\Controllers\Api\DonacionController::class, 'index']);
+        Route::get('/validadas', [\App\Http\Controllers\Api\DonacionController::class, 'index']);
     });
 
     // Rutas de archivos
@@ -282,46 +300,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/por-operador/{operadorId}', [ArchivoControlador::class, 'ObtenerPorOperador']);
     });
 
-    // Rutas de notificaciones
-    Route::prefix('notificaciones')->group(function () {
-        Route::get('/', [NotificacionControlador::class, 'ObtenerLista']);
-        Route::get('/{id}', [NotificacionControlador::class, 'ObtenerPorId']);
-        Route::post('/', [NotificacionControlador::class, 'Crear']);
-        Route::put('/{id}', [NotificacionControlador::class, 'Actualizar']);
-        Route::delete('/{id}', [NotificacionControlador::class, 'Eliminar']);
-        Route::post('/{id}/marcar-leida', [NotificacionControlador::class, 'MarcarComoLeida']);
-        Route::post('/{id}/reintentar-envio', [NotificacionControlador::class, 'ReintentarEnvio']);
-        Route::get('/mis-notificaciones', [NotificacionControlador::class, 'ObtenerMisNotificaciones']);
-        Route::get('/{id}/estadisticas', [NotificacionControlador::class, 'ObtenerEstadisticas']);
-        Route::get('/por-usuario/{usuarioId}', [NotificacionControlador::class, 'ObtenerPorUsuario']);
-        Route::get('/no-leidas', [NotificacionControlador::class, 'ObtenerNoLeidas']);
-    });
+    // Rutas de notificaciones (eliminadas)
 
-    // Rutas de logs de auditoría (solo administradores)
-    Route::prefix('logs-auditoria')->middleware('verificar.rol:administrador')->group(function () {
-        Route::get('/', [LogAuditoriaControlador::class, 'ObtenerLista']);
-        Route::get('/{id}', [LogAuditoriaControlador::class, 'ObtenerPorId']);
-        Route::post('/', [LogAuditoriaControlador::class, 'Crear']);
-        Route::get('/mis-logs', [LogAuditoriaControlador::class, 'ObtenerMisLogs']);
-        Route::post('/exportar', [LogAuditoriaControlador::class, 'Exportar']);
-        Route::post('/limpiar-logs-antiguos', [LogAuditoriaControlador::class, 'LimpiarLogsAntiguos']);
-        Route::get('/estadisticas', [LogAuditoriaControlador::class, 'ObtenerEstadisticas']);
-        Route::get('/por-usuario/{usuarioId}', [LogAuditoriaControlador::class, 'ObtenerPorUsuario']);
-        Route::get('/por-accion/{accion}', [LogAuditoriaControlador::class, 'ObtenerPorAccion']);
-    });
+    // Rutas de logs de auditoría (eliminadas)
 
-    // Rutas de reportes (solo administradores y operadores)
-    Route::prefix('reportes')->middleware('verificar.rol:administrador,operador')->group(function () {
-        Route::get('/', [ReporteControlador::class, 'ObtenerLista']);
-        Route::get('/{id}', [ReporteControlador::class, 'ObtenerPorId']);
-        Route::post('/generar-veedurias', [ReporteControlador::class, 'GenerarReporteVeedurias']);
-        Route::post('/generar-donaciones', [ReporteControlador::class, 'GenerarReporteDonaciones']);
-        Route::post('/generar-actividad-sistema', [ReporteControlador::class, 'GenerarReporteActividadSistema']);
-        Route::get('/{id}/descargar', [ReporteControlador::class, 'DescargarReporte']);
-        Route::get('/{id}/estadisticas', [ReporteControlador::class, 'ObtenerEstadisticas']);
-        Route::get('/por-tipo/{tipo}', [ReporteControlador::class, 'ObtenerPorTipo']);
-        Route::get('/por-fecha/{fecha}', [ReporteControlador::class, 'ObtenerPorFecha']);
-    });
+    // Rutas de reportes (eliminadas)
 
     // Rutas de configuración (solo administradores)
     Route::prefix('configuracion')->middleware('verificar.rol:administrador')->group(function () {
@@ -338,23 +321,29 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/estadisticas', [ConfiguracionControlador::class, 'ObtenerEstadisticas']);
     });
 
+    // Rutas de estadísticas
+    Route::prefix('estadisticas')->group(function () {
+        Route::get('/generales', [EstadisticasController::class, 'generales']);
+        Route::get('/dashboard', [EstadisticasController::class, 'dashboard']);
+        Route::get('/actividad-reciente', [EstadisticasController::class, 'actividadReciente']);
+    });
+
     // Rutas de dashboard y estadísticas generales
     Route::prefix('dashboard')->group(function () {
         Route::get('/resumen', function () {
-    return response()->json([
-        'success' => true,
+            return response()->json([
+                'success' => true,
                 'data' => [
                     'total_clientes' => \App\Models\Cliente::count(),
                     'total_operadores' => \App\Models\Operador::count(),
-                    'total_veedurias' => \App\Models\Veeduria::count(),
-                    'total_tareas' => \App\Models\Tarea::count(),
+                    'total_pqrsfd' => \App\Models\PQRSFD::count(),
                     'total_donaciones' => \App\Models\Donacion::count(),
-                    'total_narraciones' => \App\Models\NarracionConsejoIa::count(),
-                    'veedurias_pendientes' => \App\Models\Veeduria::where('estado', 'pendiente')->count(),
-                    'tareas_pendientes' => \App\Models\Tarea::where('estado', 'pendiente')->count(),
+                    'total_usuarios' => \App\Models\UsuarioSistema::count(),
+                    'registros_pendientes' => \App\Models\RegistroPendiente::where('estado', 'pendiente')->count(),
+                    'pqrsfd_pendientes' => \App\Models\PQRSFD::where('estado', 'pendiente')->count(),
                     'donaciones_pendientes' => \App\Models\Donacion::where('estado', 'pendiente')->count(),
                 ],
-                'message' => 'Resumen del dashboard obtenido exitosamente'
+                'message' => 'Resumen del dashboard obtenido exitosamente',
             ]);
         });
 
@@ -362,30 +351,60 @@ Route::middleware('auth:sanctum')->group(function () {
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'veedurias_por_estado' => \App\Models\Veeduria::selectRaw('estado, COUNT(*) as total')
+                    'pqrsfd_por_estado' => \App\Models\PQRSFD::selectRaw('estado, COUNT(*) as total')
                         ->groupBy('estado')
                         ->get(),
-                    'veedurias_por_categoria' => \App\Models\Veeduria::selectRaw('categoria, COUNT(*) as total')
-                        ->groupBy('categoria')
-                        ->get(),
-                    'tareas_por_prioridad' => \App\Models\Tarea::selectRaw('prioridad, COUNT(*) as total')
-                        ->groupBy('prioridad')
+                    'pqrsfd_por_tipo' => \App\Models\PQRSFD::selectRaw('tipo_pqrsfd, COUNT(*) as total')
+                        ->groupBy('tipo_pqrsfd')
                         ->get(),
                     'donaciones_por_estado' => \App\Models\Donacion::selectRaw('estado, COUNT(*) as total')
                         ->groupBy('estado')
                         ->get(),
+                    'usuarios_por_rol' => \App\Models\UsuarioSistema::selectRaw('rol, COUNT(*) as total')
+                        ->groupBy('rol')
+                        ->get(),
                 ],
-                'message' => 'Estadísticas generales obtenidas exitosamente'
+                'message' => 'Estadísticas generales obtenidas exitosamente',
             ]);
         });
     });
 });
+
+// Rutas de servicios de voz avanzados
+Route::prefix('voz')->middleware(['auth:sanctum'])->group(function () {
+    Route::post('/texto-a-voz', [VozController::class, 'textoAVoz']);
+    Route::post('/voz-a-texto', [VozController::class, 'vozATexto']);
+    Route::post('/conversacion', [VozController::class, 'conversacionVoz']);
+    Route::get('/configuracion', [VozController::class, 'configuracionVoz']);
+    Route::post('/probar', [VozController::class, 'probarVoz']);
+    Route::get('/estadisticas', [VozController::class, 'estadisticasVoz']);
+});
+
+// Rutas de voz inteligente avanzada con integración de IAs
+Route::prefix('voz-inteligente')->middleware(['auth:sanctum'])->group(function () {
+    Route::post('/procesar-comando', [VozInteligenteController::class, 'procesarComando']);
+    Route::get('/comandos-disponibles', [VozInteligenteController::class, 'comandosDisponibles']);
+    Route::get('/historial', [VozInteligenteController::class, 'historialInteracciones']);
+    Route::post('/preferencias', [VozInteligenteController::class, 'configurarPreferencias']);
+    Route::get('/estadisticas', [VozInteligenteController::class, 'estadisticasUso']);
+    Route::post('/probar-sistema', [VozInteligenteController::class, 'probarSistema']);
+});
+
+// Rutas públicas de voz (sin autenticación requerida para funcionalidades básicas)
+Route::prefix('voz-publico')->group(function () {
+    Route::get('/configuracion', [VozController::class, 'configuracionVoz']);
+    Route::post('/texto-a-voz', [VozController::class, 'textoAVoz'])
+        ->middleware('throttle:voz_publico'); // Limitar uso público
+});
+
+// Rutas eliminadas (controladores no existen)
+
 
 // Ruta de fallback para rutas no encontradas
 Route::fallback(function () {
     return response()->json([
         'success' => false,
         'message' => 'Ruta no encontrada',
-        'error' => 'La ruta solicitada no existe en la API'
+        'error' => 'La ruta solicitada no existe en la API',
     ], 404);
 });

@@ -13,6 +13,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AdministradorInicialSeeder::class,
+            UsuarioSistemaSeeder::class,
+            // PermisosRolesSeeder::class, // Comentado temporalmente
+            // ConfiguracionInicialSeeder::class, // Comentado temporalmente
         ]);
 
         $this->command->info('Base de datos poblada exitosamente.');

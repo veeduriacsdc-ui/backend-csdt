@@ -4,12 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\NarracionConsejoIa;
-use App\Models\Cliente;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 
 class NarracionConsejoIaControlador extends Controller
 {
@@ -41,9 +38,9 @@ class NarracionConsejoIaControlador extends Controller
             if ($request->filled('buscar')) {
                 $buscar = $request->buscar;
                 $query->where(function ($q) use ($buscar) {
-                    $q->where('Titulo', 'like', '%' . $buscar . '%')
-                      ->orWhere('NarracionOriginal', 'like', '%' . $buscar . '%')
-                      ->orWhere('NarracionMejorada', 'like', '%' . $buscar . '%');
+                    $q->where('Titulo', 'like', '%'.$buscar.'%')
+                        ->orWhere('NarracionOriginal', 'like', '%'.$buscar.'%')
+                        ->orWhere('NarracionMejorada', 'like', '%'.$buscar.'%');
                 });
             }
 
@@ -65,13 +62,13 @@ class NarracionConsejoIaControlador extends Controller
                     'per_page' => $narraciones->perPage(),
                     'total' => $narraciones->total(),
                 ],
-                'message' => 'Narraciones obtenidas exitosamente'
+                'message' => 'Narraciones obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener narraciones: ' . $e->getMessage()
+                'message' => 'Error al obtener narraciones: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -84,23 +81,23 @@ class NarracionConsejoIaControlador extends Controller
         try {
             $narracion = NarracionConsejoIa::with(['cliente', 'archivos'])->find($id);
 
-            if (!$narracion) {
+            if (! $narracion) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Narración no encontrada'
+                    'message' => 'Narración no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
                 'data' => $narracion,
-                'message' => 'Narración obtenida exitosamente'
+                'message' => 'Narración obtenida exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener narración: ' . $e->getMessage()
+                'message' => 'Error al obtener narración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -116,14 +113,14 @@ class NarracionConsejoIaControlador extends Controller
                 'NarracionOriginal' => 'required|string|max:5000',
                 'ClienteId' => 'required|exists:Clientes,IdCliente',
                 'TipoNarracion' => 'required|in:hechos,denuncia,queja,solicitud,informacion',
-                'Prioridad' => 'required|in:baja,media,alta,urgente'
+                'Prioridad' => 'required|in:baja,media,alta,urgente',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -137,13 +134,13 @@ class NarracionConsejoIaControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $narracion,
-                'message' => 'Narración creada exitosamente'
+                'message' => 'Narración creada exitosamente',
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear narración: ' . $e->getMessage()
+                'message' => 'Error al crear narración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -156,10 +153,10 @@ class NarracionConsejoIaControlador extends Controller
         try {
             $narracion = NarracionConsejoIa::find($id);
 
-            if (!$narracion) {
+            if (! $narracion) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Narración no encontrada'
+                    'message' => 'Narración no encontrada',
                 ], 404);
             }
 
@@ -169,14 +166,14 @@ class NarracionConsejoIaControlador extends Controller
                 'NarracionMejorada' => 'sometimes|string|max:5000',
                 'TipoNarracion' => 'sometimes|required|in:hechos,denuncia,queja,solicitud,informacion',
                 'Prioridad' => 'sometimes|required|in:baja,media,alta,urgente',
-                'Comentarios' => 'sometimes|string|max:1000'
+                'Comentarios' => 'sometimes|string|max:1000',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -185,13 +182,13 @@ class NarracionConsejoIaControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $narracion,
-                'message' => 'Narración actualizada exitosamente'
+                'message' => 'Narración actualizada exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar narración: ' . $e->getMessage()
+                'message' => 'Error al actualizar narración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -204,10 +201,10 @@ class NarracionConsejoIaControlador extends Controller
         try {
             $narracion = NarracionConsejoIa::find($id);
 
-            if (!$narracion) {
+            if (! $narracion) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Narración no encontrada'
+                    'message' => 'Narración no encontrada',
                 ], 404);
             }
 
@@ -215,7 +212,7 @@ class NarracionConsejoIaControlador extends Controller
             if ($narracion->archivos()->exists()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No se puede eliminar la narración porque tiene archivos asociados'
+                    'message' => 'No se puede eliminar la narración porque tiene archivos asociados',
                 ], 400);
             }
 
@@ -223,13 +220,13 @@ class NarracionConsejoIaControlador extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Narración eliminada exitosamente'
+                'message' => 'Narración eliminada exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar narración: ' . $e->getMessage()
+                'message' => 'Error al eliminar narración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -242,14 +239,14 @@ class NarracionConsejoIaControlador extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'NarracionOriginal' => 'required|string|max:5000',
-                'TipoMejora' => 'required|in:gramatica,claridad,estructura,completo'
+                'TipoMejora' => 'required|in:gramatica,claridad,estructura,completo',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -266,15 +263,15 @@ class NarracionConsejoIaControlador extends Controller
                     'narracion_original' => $narracionOriginal,
                     'narracion_mejorada' => $narracionMejorada,
                     'tipo_mejora' => $tipoMejora,
-                    'fecha_mejora' => now()->toISOString()
+                    'fecha_mejora' => now()->toISOString(),
                 ],
-                'message' => 'Narración mejorada exitosamente con IA'
+                'message' => 'Narración mejorada exitosamente con IA',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al mejorar narración: ' . $e->getMessage()
+                'message' => 'Error al mejorar narración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -286,14 +283,14 @@ class NarracionConsejoIaControlador extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'narracion_id' => 'required|exists:NarracionesConsejoIa,IdNarracion'
+                'narracion_id' => 'required|exists:NarracionesConsejoIa,IdNarracion',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ID de narración no válido',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -306,19 +303,19 @@ class NarracionConsejoIaControlador extends Controller
                 'codigo' => $narracion->Codigo,
                 'titulo' => $narracion->Titulo,
                 'fecha_generacion' => now()->toISOString(),
-                'estado' => 'generado'
+                'estado' => 'generado',
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $pdfData,
-                'message' => 'PDF generado exitosamente'
+                'message' => 'PDF generado exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al generar PDF: ' . $e->getMessage()
+                'message' => 'Error al generar PDF: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -346,19 +343,19 @@ class NarracionConsejoIaControlador extends Controller
                     ->orderBy('mes')
                     ->get(),
                 'mejoradas_con_ia' => NarracionConsejoIa::whereNotNull('NarracionMejorada')->count(),
-                'pendientes_mejora' => NarracionConsejoIa::whereNull('NarracionMejorada')->count()
+                'pendientes_mejora' => NarracionConsejoIa::whereNull('NarracionMejorada')->count(),
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $estadisticas,
-                'message' => 'Estadísticas obtenidas exitosamente'
+                'message' => 'Estadísticas obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+                'message' => 'Error al obtener estadísticas: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -373,12 +370,12 @@ class NarracionConsejoIaControlador extends Controller
             'gramatica' => 'Se han corregido errores gramaticales y ortográficos.',
             'claridad' => 'Se ha mejorado la claridad y legibilidad del texto.',
             'estructura' => 'Se ha reorganizado la estructura para mejor comprensión.',
-            'completo' => 'Se ha expandido y completado la información faltante.'
+            'completo' => 'Se ha expandido y completado la información faltante.',
         ];
 
         $mejora = $mejoras[$tipo] ?? 'Se ha aplicado una mejora general al texto.';
-        
-        return $texto . "\n\n[MEJORA APLICADA: " . strtoupper($tipo) . "]\n" . $mejora;
+
+        return $texto."\n\n[MEJORA APLICADA: ".strtoupper($tipo)."]\n".$mejora;
     }
 
     /**
@@ -398,6 +395,6 @@ class NarracionConsejoIaControlador extends Controller
             $numero = 1;
         }
 
-        return $prefijo . $anio . str_pad($numero, 4, '0', STR_PAD_LEFT);
+        return $prefijo.$anio.str_pad($numero, 4, '0', STR_PAD_LEFT);
     }
 }

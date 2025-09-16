@@ -3,15 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Sesion;
 use App\Models\Cliente;
 use App\Models\Operador;
-use Illuminate\Http\Request;
+use App\Models\Sesion;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class GestionUsuariosControlador extends Controller
 {
@@ -28,14 +26,14 @@ class GestionUsuariosControlador extends Controller
                 'buscar' => 'nullable|string|max:100',
                 'por_pagina' => 'nullable|integer|min:1|max:100',
                 'ordenar_por' => 'nullable|in:nombre,email,fecha_registro,estado',
-                'orden' => 'nullable|in:asc,desc'
+                'orden' => 'nullable|in:asc,desc',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -50,22 +48,22 @@ class GestionUsuariosControlador extends Controller
             $usuarios = collect();
 
             // Buscar en clientes
-            if (!$tipoUsuario || $tipoUsuario === 'cliente') {
+            if (! $tipoUsuario || $tipoUsuario === 'cliente') {
                 $clientes = Cliente::query();
-                
+
                 if ($estado) {
                     $clientes->where('estado', $estado);
                 }
-                
+
                 if ($buscar) {
                     $clientes->where(function ($query) use ($buscar) {
                         $query->where('nombre_completo', 'like', "%{$buscar}%")
-                              ->orWhere('correo_electronico', 'like', "%{$buscar}%");
+                            ->orWhere('correo_electronico', 'like', "%{$buscar}%");
                     });
                 }
-                
+
                 $clientes = $clientes->orderBy($ordenarPor, $orden)->paginate($porPagina);
-                
+
                 foreach ($clientes as $cliente) {
                     $usuarios->push([
                         'id' => $cliente->id,
@@ -77,32 +75,32 @@ class GestionUsuariosControlador extends Controller
                         'estado' => $cliente->estado,
                         'fecha_registro' => $cliente->fecha_registro,
                         'total_operaciones' => $cliente->operaciones()->count(),
-                        'total_donaciones' => $cliente->donaciones()->count()
+                        'total_donaciones' => $cliente->donaciones()->count(),
                     ]);
                 }
             }
 
             // Buscar en operadores
-            if (!$tipoUsuario || in_array($tipoUsuario, ['operador', 'administrador'])) {
+            if (! $tipoUsuario || in_array($tipoUsuario, ['operador', 'administrador'])) {
                 $operadores = Operador::query();
-                
+
                 if ($rol) {
                     $operadores->where('rol', $rol);
                 }
-                
+
                 if ($estado) {
                     $operadores->where('estado', $estado);
                 }
-                
+
                 if ($buscar) {
                     $operadores->where(function ($query) use ($buscar) {
                         $query->where('nombre_completo', 'like', "%{$buscar}%")
-                              ->orWhere('correo_electronico', 'like', "%{$buscar}%");
+                            ->orWhere('correo_electronico', 'like', "%{$buscar}%");
                     });
                 }
-                
+
                 $operadores = $operadores->orderBy($ordenarPor, $orden)->paginate($porPagina);
-                
+
                 foreach ($operadores as $operador) {
                     $usuarios->push([
                         'id' => $operador->id,
@@ -117,7 +115,7 @@ class GestionUsuariosControlador extends Controller
                         'total_veedurias_asignadas' => $operador->veedurias()->count(),
                         'total_tareas_asignadas' => $operador->tareas()->count(),
                         'es_supervisor' => $operador->esSupervisor(),
-                        'supervisor_id' => $operador->supervisor_id
+                        'supervisor_id' => $operador->supervisor_id,
                     ]);
                 }
             }
@@ -139,17 +137,17 @@ class GestionUsuariosControlador extends Controller
                     'total' => $total,
                     'por_pagina' => $porPagina,
                     'pagina_actual' => 1,
-                    'total_paginas' => ceil($total / $porPagina)
-                ]
+                    'total_paginas' => ceil($total / $porPagina),
+                ],
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error al obtener lista de usuarios: ' . $e->getMessage());
-            
+            Log::error('Error al obtener lista de usuarios: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno del servidor',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -168,18 +166,18 @@ class GestionUsuariosControlador extends Controller
                 $usuario = Operador::with(['veedurias', 'tareas', 'subordinados'])->find($id);
             }
 
-            if (!$usuario) {
+            if (! $usuario) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Usuario no encontrado'
+                    'message' => 'Usuario no encontrado',
                 ], 404);
             }
 
             // Obtener sesión activa si existe
             $sesion = Sesion::where('usuario_id', $id)
-                           ->where('tipo_usuario', $tipoUsuario)
-                           ->where('estado_sesion', 'activa')
-                           ->first();
+                ->where('tipo_usuario', $tipoUsuario)
+                ->where('estado_sesion', 'activa')
+                ->first();
 
             $datosUsuario = [
                 'id' => $usuario->id,
@@ -190,7 +188,7 @@ class GestionUsuariosControlador extends Controller
                 'direccion' => $usuario->direccion,
                 'estado' => $usuario->estado,
                 'fecha_registro' => $usuario->fecha_registro,
-                'sesion_activa' => $sesion ? true : false
+                'sesion_activa' => $sesion ? true : false,
             ];
 
             if ($tipoUsuario === 'operador') {
@@ -211,16 +209,16 @@ class GestionUsuariosControlador extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Usuario obtenido exitosamente',
-                'data' => $datosUsuario
+                'data' => $datosUsuario,
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error al obtener usuario: ' . $e->getMessage());
-            
+            Log::error('Error al obtener usuario: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno del servidor',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -235,14 +233,14 @@ class GestionUsuariosControlador extends Controller
                 'nuevo_rol' => 'required|in:cliente,operador,administrador',
                 'nivel_acceso' => 'nullable|integer|min:1|max:5',
                 'permisos' => 'nullable|array',
-                'notas' => 'nullable|string|max:500'
+                'notas' => 'nullable|string|max:500',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -254,11 +252,11 @@ class GestionUsuariosControlador extends Controller
 
             if ($tipoUsuario === 'cliente') {
                 $usuario = Cliente::find($id);
-                
-                if (!$usuario) {
+
+                if (! $usuario) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Cliente no encontrado'
+                        'message' => 'Cliente no encontrado',
                     ], 404);
                 }
 
@@ -274,7 +272,7 @@ class GestionUsuariosControlador extends Controller
                         'nivel_acceso' => $nivelAcceso ?? 3,
                         'permisos' => $permisos ?? [],
                         'estado' => 'activo',
-                        'notas_internas' => $notas
+                        'notas_internas' => $notas,
                     ]);
 
                     // Desactivar cliente
@@ -284,17 +282,17 @@ class GestionUsuariosControlador extends Controller
                 } else {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Los clientes solo pueden ser promovidos a operador o administrador'
+                        'message' => 'Los clientes solo pueden ser promovidos a operador o administrador',
                     ], 400);
                 }
 
             } else {
                 $usuario = Operador::find($id);
-                
-                if (!$usuario) {
+
+                if (! $usuario) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Operador no encontrado'
+                        'message' => 'Operador no encontrado',
                     ], 404);
                 }
 
@@ -302,7 +300,7 @@ class GestionUsuariosControlador extends Controller
                     'rol' => $nuevoRol,
                     'nivel_acceso' => $nivelAcceso ?? $usuario->nivel_acceso,
                     'permisos' => $permisos ?? $usuario->permisos,
-                    'notas_internas' => $notas
+                    'notas_internas' => $notas,
                 ]);
 
                 $mensaje = "Rol del operador cambiado a {$nuevoRol} exitosamente";
@@ -310,9 +308,9 @@ class GestionUsuariosControlador extends Controller
 
             // Actualizar sesión si existe
             $sesion = Sesion::where('usuario_id', $id)
-                           ->where('tipo_usuario', $tipoUsuario)
-                           ->where('estado_sesion', 'activa')
-                           ->first();
+                ->where('tipo_usuario', $tipoUsuario)
+                ->where('estado_sesion', 'activa')
+                ->first();
 
             if ($sesion) {
                 $sesion->cambiarRol($nuevoRol);
@@ -328,7 +326,7 @@ class GestionUsuariosControlador extends Controller
                 'datos_anteriores' => ['rol_anterior' => $usuario->rol ?? 'cliente'],
                 'datos_nuevos' => ['nuevo_rol' => $nuevoRol],
                 'ip_cliente' => request()->ip(),
-                'user_agent' => request()->userAgent()
+                'user_agent' => request()->userAgent(),
             ]);
 
             return response()->json([
@@ -338,17 +336,17 @@ class GestionUsuariosControlador extends Controller
                     'usuario_id' => $id,
                     'nuevo_rol' => $nuevoRol,
                     'nivel_acceso' => $nivelAcceso,
-                    'permisos' => $permisos
-                ]
+                    'permisos' => $permisos,
+                ],
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error al cambiar rol de usuario: ' . $e->getMessage());
-            
+            Log::error('Error al cambiar rol de usuario: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno del servidor',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -362,14 +360,14 @@ class GestionUsuariosControlador extends Controller
             $validator = Validator::make($request->all(), [
                 'nuevo_estado' => 'required|in:activo,inactivo,suspendido',
                 'motivo' => 'nullable|string|max:500',
-                'fecha_suspension' => 'nullable|date'
+                'fecha_suspension' => 'nullable|date',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -384,17 +382,17 @@ class GestionUsuariosControlador extends Controller
                 $usuario = Operador::find($id);
             }
 
-            if (!$usuario) {
+            if (! $usuario) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Usuario no encontrado'
+                    'message' => 'Usuario no encontrado',
                 ], 404);
             }
 
             $estadoAnterior = $usuario->estado;
 
             $datosActualizacion = ['estado' => $nuevoEstado];
-            
+
             if ($motivo) {
                 $datosActualizacion['notas_internas'] = $motivo;
             }
@@ -408,9 +406,9 @@ class GestionUsuariosControlador extends Controller
             // Si se está suspendiendo, cerrar sesión activa
             if ($nuevoEstado === 'suspendido') {
                 $sesion = Sesion::where('usuario_id', $id)
-                               ->where('tipo_usuario', $tipoUsuario)
-                               ->where('estado_sesion', 'activa')
-                               ->first();
+                    ->where('tipo_usuario', $tipoUsuario)
+                    ->where('estado_sesion', 'activa')
+                    ->first();
 
                 if ($sesion) {
                     $sesion->cerrarSesion();
@@ -427,7 +425,7 @@ class GestionUsuariosControlador extends Controller
                 'datos_anteriores' => ['estado_anterior' => $estadoAnterior],
                 'datos_nuevos' => ['nuevo_estado' => $nuevoEstado, 'motivo' => $motivo],
                 'ip_cliente' => request()->ip(),
-                'user_agent' => request()->userAgent()
+                'user_agent' => request()->userAgent(),
             ]);
 
             return response()->json([
@@ -438,17 +436,17 @@ class GestionUsuariosControlador extends Controller
                     'estado_anterior' => $estadoAnterior,
                     'nuevo_estado' => $nuevoEstado,
                     'motivo' => $motivo,
-                    'fecha_suspension' => $fechaSuspension
-                ]
+                    'fecha_suspension' => $fechaSuspension,
+                ],
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error al cambiar estado de usuario: ' . $e->getMessage());
-            
+            Log::error('Error al cambiar estado de usuario: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno del servidor',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -466,7 +464,7 @@ class GestionUsuariosControlador extends Controller
 
             $clientesActivos = Cliente::where('estado', 'activo')->count();
             $operadoresActivos = Operador::where('estado', 'activo')->count();
-            $usuariosSuspendidos = Cliente::where('estado', 'suspendido')->count() + 
+            $usuariosSuspendidos = Cliente::where('estado', 'suspendido')->count() +
                                  Operador::where('estado', 'suspendido')->count();
 
             $sesionesActivas = Sesion::activas()->count();
@@ -478,37 +476,37 @@ class GestionUsuariosControlador extends Controller
                     'operadores' => $totalOperadores,
                     'administradores' => $totalAdministradores,
                     'operadores_veedores' => $totalOperadoresVeedores,
-                    'total_usuarios' => $totalClientes + $totalOperadores
+                    'total_usuarios' => $totalClientes + $totalOperadores,
                 ],
                 'estados' => [
                     'activos' => $clientesActivos + $operadoresActivos,
                     'suspendidos' => $usuariosSuspendidos,
-                    'inactivos' => ($totalClientes + $totalOperadores) - ($clientesActivos + $operadoresActivos + $usuariosSuspendidos)
+                    'inactivos' => ($totalClientes + $totalOperadores) - ($clientesActivos + $operadoresActivos + $usuariosSuspendidos),
                 ],
                 'sesiones' => [
                     'activas' => $sesionesActivas,
-                    'hoy' => $sesionesHoy
+                    'hoy' => $sesionesHoy,
                 ],
                 'distribucion_roles' => [
                     'clientes' => round(($totalClientes / ($totalClientes + $totalOperadores)) * 100, 1),
                     'operadores' => round(($totalOperadoresVeedores / ($totalClientes + $totalOperadores)) * 100, 1),
-                    'administradores' => round(($totalAdministradores / ($totalClientes + $totalOperadores)) * 100, 1)
-                ]
+                    'administradores' => round(($totalAdministradores / ($totalClientes + $totalOperadores)) * 100, 1),
+                ],
             ];
 
             return response()->json([
                 'success' => true,
                 'message' => 'Estadísticas de usuarios obtenidas exitosamente',
-                'data' => $estadisticas
+                'data' => $estadisticas,
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error al obtener estadísticas de usuarios: ' . $e->getMessage());
-            
+            Log::error('Error al obtener estadísticas de usuarios: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno del servidor',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -528,10 +526,10 @@ class GestionUsuariosControlador extends Controller
                 $usuario = Operador::find($id);
             }
 
-            if (!$usuario) {
+            if (! $usuario) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Usuario no encontrado'
+                    'message' => 'Usuario no encontrado',
                 ], 404);
             }
 
@@ -541,16 +539,16 @@ class GestionUsuariosControlador extends Controller
                 if ($totalAdmins <= 1) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'No se puede eliminar el último administrador del sistema'
+                        'message' => 'No se puede eliminar el último administrador del sistema',
                     ], 400);
                 }
             }
 
             // Cerrar sesión activa si existe
             $sesion = Sesion::where('usuario_id', $id)
-                           ->where('tipo_usuario', $tipoUsuario)
-                           ->where('estado_sesion', 'activa')
-                           ->first();
+                ->where('tipo_usuario', $tipoUsuario)
+                ->where('estado_sesion', 'activa')
+                ->first();
 
             if ($sesion) {
                 $sesion->cerrarSesion();
@@ -569,7 +567,7 @@ class GestionUsuariosControlador extends Controller
                 'datos_anteriores' => ['usuario_eliminado' => $usuario->toArray()],
                 'datos_nuevos' => [],
                 'ip_cliente' => request()->ip(),
-                'user_agent' => request()->userAgent()
+                'user_agent' => request()->userAgent(),
             ]);
 
             return response()->json([
@@ -578,17 +576,17 @@ class GestionUsuariosControlador extends Controller
                 'data' => [
                     'usuario_id' => $id,
                     'tipo_usuario' => $tipoUsuario,
-                    'motivo' => $motivo
-                ]
+                    'motivo' => $motivo,
+                ],
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error al eliminar usuario: ' . $e->getMessage());
-            
+            Log::error('Error al eliminar usuario: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno del servidor',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -607,17 +605,17 @@ class GestionUsuariosControlador extends Controller
                 $usuario = Operador::withTrashed()->find($id);
             }
 
-            if (!$usuario) {
+            if (! $usuario) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Usuario no encontrado'
+                    'message' => 'Usuario no encontrado',
                 ], 404);
             }
 
-            if (!$usuario->trashed()) {
+            if (! $usuario->trashed()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'El usuario no está eliminado'
+                    'message' => 'El usuario no está eliminado',
                 ], 400);
             }
 
@@ -634,7 +632,7 @@ class GestionUsuariosControlador extends Controller
                 'datos_anteriores' => [],
                 'datos_nuevos' => ['usuario_restaurado' => $usuario->toArray()],
                 'ip_cliente' => request()->ip(),
-                'user_agent' => request()->userAgent()
+                'user_agent' => request()->userAgent(),
             ]);
 
             return response()->json([
@@ -643,17 +641,17 @@ class GestionUsuariosControlador extends Controller
                 'data' => [
                     'usuario_id' => $id,
                     'tipo_usuario' => $tipoUsuario,
-                    'nombre_completo' => $usuario->nombre_completo
-                ]
+                    'nombre_completo' => $usuario->nombre_completo,
+                ],
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error al restaurar usuario: ' . $e->getMessage());
-            
+            Log::error('Error al restaurar usuario: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno del servidor',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }

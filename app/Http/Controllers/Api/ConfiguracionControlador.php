@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Configuracion;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class ConfiguracionControlador extends Controller
 {
@@ -32,9 +31,9 @@ class ConfiguracionControlador extends Controller
             if ($request->filled('buscar')) {
                 $buscar = $request->buscar;
                 $query->where(function ($q) use ($buscar) {
-                    $q->where('Clave', 'like', '%' . $buscar . '%')
-                      ->orWhere('Descripcion', 'like', '%' . $buscar . '%')
-                      ->orWhere('Categoria', 'like', '%' . $buscar . '%');
+                    $q->where('Clave', 'like', '%'.$buscar.'%')
+                        ->orWhere('Descripcion', 'like', '%'.$buscar.'%')
+                        ->orWhere('Categoria', 'like', '%'.$buscar.'%');
                 });
             }
 
@@ -56,13 +55,13 @@ class ConfiguracionControlador extends Controller
                     'per_page' => $configuraciones->perPage(),
                     'total' => $configuraciones->total(),
                 ],
-                'message' => 'Configuraciones obtenidas exitosamente'
+                'message' => 'Configuraciones obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener configuraciones: ' . $e->getMessage()
+                'message' => 'Error al obtener configuraciones: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -75,23 +74,23 @@ class ConfiguracionControlador extends Controller
         try {
             $configuracion = Configuracion::find($id);
 
-            if (!$configuracion) {
+            if (! $configuracion) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Configuración no encontrada'
+                    'message' => 'Configuración no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
                 'data' => $configuracion,
-                'message' => 'Configuración obtenida exitosamente'
+                'message' => 'Configuración obtenida exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener configuración: ' . $e->getMessage()
+                'message' => 'Error al obtener configuración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -103,14 +102,14 @@ class ConfiguracionControlador extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'clave' => 'required|string|max:100'
+                'clave' => 'required|string|max:100',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Clave no válida',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -118,23 +117,23 @@ class ConfiguracionControlador extends Controller
                 ->where('Activa', true)
                 ->first();
 
-            if (!$configuracion) {
+            if (! $configuracion) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Configuración no encontrada'
+                    'message' => 'Configuración no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
                 'data' => $configuracion,
-                'message' => 'Configuración obtenida exitosamente'
+                'message' => 'Configuración obtenida exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener configuración: ' . $e->getMessage()
+                'message' => 'Error al obtener configuración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -153,14 +152,14 @@ class ConfiguracionControlador extends Controller
                 'Tipo' => 'required|in:string,integer,float,boolean,json,array',
                 'Activa' => 'boolean',
                 'Editable' => 'boolean',
-                'Validacion' => 'sometimes|string|max:500'
+                'Validacion' => 'sometimes|string|max:500',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -172,19 +171,19 @@ class ConfiguracionControlador extends Controller
             $configuracion = Configuracion::create($datos);
 
             // Limpiar cache de configuraciones
-            Cache::forget('configuracion_' . $configuracion->Clave);
-            Cache::forget('configuraciones_categoria_' . $configuracion->Categoria);
+            Cache::forget('configuracion_'.$configuracion->Clave);
+            Cache::forget('configuraciones_categoria_'.$configuracion->Categoria);
 
             return response()->json([
                 'success' => true,
                 'data' => $configuracion,
-                'message' => 'Configuración creada exitosamente'
+                'message' => 'Configuración creada exitosamente',
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear configuración: ' . $e->getMessage()
+                'message' => 'Error al crear configuración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -197,18 +196,18 @@ class ConfiguracionControlador extends Controller
         try {
             $configuracion = Configuracion::find($id);
 
-            if (!$configuracion) {
+            if (! $configuracion) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Configuración no encontrada'
+                    'message' => 'Configuración no encontrada',
                 ], 404);
             }
 
             // Verificar si la configuración es editable
-            if (!$configuracion->Editable) {
+            if (! $configuracion->Editable) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Esta configuración no es editable'
+                    'message' => 'Esta configuración no es editable',
                 ], 400);
             }
 
@@ -218,33 +217,33 @@ class ConfiguracionControlador extends Controller
                 'Categoria' => 'sometimes|required|string|max:100',
                 'Tipo' => 'sometimes|required|in:string,integer,float,boolean,json,array',
                 'Activa' => 'sometimes|boolean',
-                'Validacion' => 'sometimes|string|max:500'
+                'Validacion' => 'sometimes|string|max:500',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $configuracion->update($request->all());
 
             // Limpiar cache de configuraciones
-            Cache::forget('configuracion_' . $configuracion->Clave);
-            Cache::forget('configuraciones_categoria_' . $configuracion->Categoria);
+            Cache::forget('configuracion_'.$configuracion->Clave);
+            Cache::forget('configuraciones_categoria_'.$configuracion->Categoria);
 
             return response()->json([
                 'success' => true,
                 'data' => $configuracion,
-                'message' => 'Configuración actualizada exitosamente'
+                'message' => 'Configuración actualizada exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar configuración: ' . $e->getMessage()
+                'message' => 'Error al actualizar configuración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -257,36 +256,36 @@ class ConfiguracionControlador extends Controller
         try {
             $configuracion = Configuracion::find($id);
 
-            if (!$configuracion) {
+            if (! $configuracion) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Configuración no encontrada'
+                    'message' => 'Configuración no encontrada',
                 ], 404);
             }
 
             // Verificar si la configuración es editable
-            if (!$configuracion->Editable) {
+            if (! $configuracion->Editable) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Esta configuración no se puede eliminar'
+                    'message' => 'Esta configuración no se puede eliminar',
                 ], 400);
             }
 
             $configuracion->delete();
 
             // Limpiar cache de configuraciones
-            Cache::forget('configuracion_' . $configuracion->Clave);
-            Cache::forget('configuraciones_categoria_' . $configuracion->Categoria);
+            Cache::forget('configuracion_'.$configuracion->Clave);
+            Cache::forget('configuraciones_categoria_'.$configuracion->Categoria);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Configuración eliminada exitosamente'
+                'message' => 'Configuración eliminada exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar configuración: ' . $e->getMessage()
+                'message' => 'Error al eliminar configuración: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -298,19 +297,19 @@ class ConfiguracionControlador extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'categoria' => 'required|string|max:100'
+                'categoria' => 'required|string|max:100',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Categoría no válida',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
-            $cacheKey = 'configuraciones_categoria_' . $request->categoria;
-            
+            $cacheKey = 'configuraciones_categoria_'.$request->categoria;
+
             $configuraciones = Cache::remember($cacheKey, 3600, function () use ($request) {
                 return Configuracion::where('Categoria', $request->categoria)
                     ->where('Activa', true)
@@ -321,13 +320,13 @@ class ConfiguracionControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $configuraciones,
-                'message' => 'Configuraciones de la categoría obtenidas exitosamente'
+                'message' => 'Configuraciones de la categoría obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener configuraciones: ' . $e->getMessage()
+                'message' => 'Error al obtener configuraciones: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -339,7 +338,7 @@ class ConfiguracionControlador extends Controller
     {
         try {
             $cacheKey = 'configuraciones_sistema';
-            
+
             $configuraciones = Cache::remember($cacheKey, 3600, function () {
                 return Configuracion::where('Activa', true)
                     ->orderBy('Categoria', 'asc')
@@ -351,13 +350,13 @@ class ConfiguracionControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $configuraciones,
-                'message' => 'Configuraciones del sistema obtenidas exitosamente'
+                'message' => 'Configuraciones del sistema obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener configuraciones: ' . $e->getMessage()
+                'message' => 'Error al obtener configuraciones: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -371,14 +370,14 @@ class ConfiguracionControlador extends Controller
             $validator = Validator::make($request->all(), [
                 'configuraciones' => 'required|array',
                 'configuraciones.*.id' => 'required|exists:Configuraciones,IdConfiguracion',
-                'configuraciones.*.valor' => 'required|string|max:1000'
+                'configuraciones.*.valor' => 'required|string|max:1000',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -387,14 +386,14 @@ class ConfiguracionControlador extends Controller
 
             foreach ($request->configuraciones as $config) {
                 $configuracion = Configuracion::find($config['id']);
-                
+
                 if ($configuracion && $configuracion->Editable) {
                     $configuracion->update(['Valor' => $config['valor']]);
                     $configuracionesActualizadas[] = $configuracion;
-                    
+
                     // Agregar claves de cache para limpiar
-                    $cacheKeys[] = 'configuracion_' . $configuracion->Clave;
-                    $cacheKeys[] = 'configuraciones_categoria_' . $configuracion->Categoria;
+                    $cacheKeys[] = 'configuracion_'.$configuracion->Clave;
+                    $cacheKeys[] = 'configuraciones_categoria_'.$configuracion->Categoria;
                 }
             }
 
@@ -407,15 +406,15 @@ class ConfiguracionControlador extends Controller
                 'success' => true,
                 'data' => [
                     'configuraciones_actualizadas' => count($configuracionesActualizadas),
-                    'configuraciones' => $configuracionesActualizadas
+                    'configuraciones' => $configuracionesActualizadas,
                 ],
-                'message' => 'Configuraciones actualizadas exitosamente'
+                'message' => 'Configuraciones actualizadas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar configuraciones: ' . $e->getMessage()
+                'message' => 'Error al actualizar configuraciones: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -440,19 +439,19 @@ class ConfiguracionControlador extends Controller
                     ->get(),
                 'ultimas_actualizaciones' => Configuracion::orderBy('FechaActualizacion', 'desc')
                     ->limit(10)
-                    ->get(['Clave', 'Categoria', 'FechaActualizacion'])
+                    ->get(['Clave', 'Categoria', 'FechaActualizacion']),
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $estadisticas,
-                'message' => 'Estadísticas obtenidas exitosamente'
+                'message' => 'Estadísticas obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+                'message' => 'Error al obtener estadísticas: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -465,12 +464,12 @@ class ConfiguracionControlador extends Controller
         try {
             // Obtener todas las configuraciones para limpiar sus caches
             $configuraciones = Configuracion::all();
-            
+
             foreach ($configuraciones as $config) {
-                Cache::forget('configuracion_' . $config->Clave);
-                Cache::forget('configuraciones_categoria_' . $config->Categoria);
+                Cache::forget('configuracion_'.$config->Clave);
+                Cache::forget('configuraciones_categoria_'.$config->Categoria);
             }
-            
+
             // Limpiar cache general del sistema
             Cache::forget('configuraciones_sistema');
 
@@ -478,15 +477,15 @@ class ConfiguracionControlador extends Controller
                 'success' => true,
                 'data' => [
                     'configuraciones_procesadas' => $configuraciones->count(),
-                    'cache_limpiado' => true
+                    'cache_limpiado' => true,
                 ],
-                'message' => 'Cache de configuraciones limpiado exitosamente'
+                'message' => 'Cache de configuraciones limpiado exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al limpiar cache: ' . $e->getMessage()
+                'message' => 'Error al limpiar cache: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -500,14 +499,14 @@ class ConfiguracionControlador extends Controller
             $validator = Validator::make($request->all(), [
                 'formato' => 'required|in:json,csv',
                 'categoria' => 'sometimes|string|max:100',
-                'incluir_inactivas' => 'boolean'
+                'incluir_inactivas' => 'boolean',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Parámetros no válidos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -517,7 +516,7 @@ class ConfiguracionControlador extends Controller
                 $query->where('Categoria', $request->categoria);
             }
 
-            if (!$request->get('incluir_inactivas', false)) {
+            if (! $request->get('incluir_inactivas', false)) {
                 $query->where('Activa', true);
             }
 
@@ -531,19 +530,19 @@ class ConfiguracionControlador extends Controller
                 'total_registros' => $configuraciones->count(),
                 'fecha_exportacion' => now()->toISOString(),
                 'configuraciones' => $configuraciones,
-                'estado' => 'exportado'
+                'estado' => 'exportado',
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $datosExportacion,
-                'message' => 'Configuraciones exportadas exitosamente'
+                'message' => 'Configuraciones exportadas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al exportar configuraciones: ' . $e->getMessage()
+                'message' => 'Error al exportar configuraciones: '.$e->getMessage(),
             ], 500);
         }
     }

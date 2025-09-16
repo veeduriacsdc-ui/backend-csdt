@@ -2,14 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class NarracionConsejoIa extends Model
 {
@@ -48,7 +46,7 @@ class NarracionConsejoIa extends Model
         'parametros_mejora',
         'tiempo_procesamiento',
         'recursos_utilizados',
-        'notas_internas'
+        'notas_internas',
     ];
 
     protected $casts = [
@@ -66,7 +64,7 @@ class NarracionConsejoIa extends Model
         'longitud_mejorada' => 'integer',
         'calidad_estimada' => 'decimal:3,2',
         'nivel_confianza_ia' => 'decimal:3,2',
-        'tiempo_procesamiento' => 'decimal:8,2'
+        'tiempo_procesamiento' => 'decimal:8,2',
     ];
 
     // Relaciones
@@ -165,7 +163,7 @@ class NarracionConsejoIa extends Model
         }
     }
 
-    public function scopePorLongitud(Builder $query, int $longitudMinima, int $longitudMaxima = null): void
+    public function scopePorLongitud(Builder $query, int $longitudMinima, ?int $longitudMaxima = null): void
     {
         if ($longitudMaxima) {
             $query->whereBetween('longitud_original', [$longitudMinima, $longitudMaxima]);
@@ -217,75 +215,77 @@ class NarracionConsejoIa extends Model
 
     public function getDiasDesdeMejoraAttribute(): int
     {
-        if (!$this->fecha_mejora) {
+        if (! $this->fecha_mejora) {
             return -1;
         }
-        
+
         return $this->fecha_mejora->diffInDays(now());
     }
 
     public function getLongitudOriginalFormateadaAttribute(): string
     {
-        if (!$this->longitud_original) {
+        if (! $this->longitud_original) {
             return 'No calculada';
         }
-        
+
         if ($this->longitud_original < 1000) {
-            return $this->longitud_original . ' caracteres';
+            return $this->longitud_original.' caracteres';
         } else {
-            return number_format($this->longitud_original / 1000, 1) . 'k caracteres';
+            return number_format($this->longitud_original / 1000, 1).'k caracteres';
         }
     }
 
     public function getLongitudMejoradaFormateadaAttribute(): string
     {
-        if (!$this->longitud_mejorada) {
+        if (! $this->longitud_mejorada) {
             return 'No disponible';
         }
-        
+
         if ($this->longitud_mejorada < 1000) {
-            return $this->longitud_mejorada . ' caracteres';
+            return $this->longitud_mejorada.' caracteres';
         } else {
-            return number_format($this->longitud_mejorada / 1000, 1) . 'k caracteres';
+            return number_format($this->longitud_mejorada / 1000, 1).'k caracteres';
         }
     }
 
     public function getCalidadFormateadaAttribute(): string
     {
-        if (!$this->calidad_estimada) {
+        if (! $this->calidad_estimada) {
             return 'No evaluada';
         }
-        
+
         $porcentaje = round($this->calidad_estimada * 100, 1);
-        return $porcentaje . '%';
+
+        return $porcentaje.'%';
     }
 
     public function getConfianzaFormateadaAttribute(): string
     {
-        if (!$this->nivel_confianza_ia) {
+        if (! $this->nivel_confianza_ia) {
             return 'No calculada';
         }
-        
+
         $porcentaje = round($this->nivel_confianza_ia * 100, 1);
-        return $porcentaje . '%';
+
+        return $porcentaje.'%';
     }
 
     public function getTiempoProcesamientoFormateadoAttribute(): string
     {
-        if (!$this->tiempo_procesamiento) {
+        if (! $this->tiempo_procesamiento) {
             return 'No registrado';
         }
-        
+
         if ($this->tiempo_procesamiento < 60) {
-            return round($this->tiempo_procesamiento, 2) . ' segundos';
+            return round($this->tiempo_procesamiento, 2).' segundos';
         } else {
-            return round($this->tiempo_procesamiento / 60, 2) . ' minutos';
+            return round($this->tiempo_procesamiento / 60, 2).' minutos';
         }
     }
 
     public function getTieneMejorasAttribute(): bool
     {
-        return !empty($this->narracion_mejorada);
+        return ! empty($this->narracion_mejorada);
     }
 
     public function getEstaCompletadaAttribute(): bool
@@ -315,24 +315,26 @@ class NarracionConsejoIa extends Model
 
     public function getMejoraPorcentualAttribute(): float
     {
-        if (!$this->longitud_original || !$this->longitud_mejorada) {
+        if (! $this->longitud_original || ! $this->longitud_mejorada) {
             return 0.0;
         }
-        
+
         $diferencia = $this->longitud_mejorada - $this->longitud_original;
+
         return round(($diferencia / $this->longitud_original) * 100, 2);
     }
 
     public function getMejoraPorcentualFormateadaAttribute(): string
     {
         $porcentaje = $this->mejora_porcentual;
-        
+
         if ($porcentaje === 0.0) {
             return 'Sin cambios';
         }
-        
+
         $signo = $porcentaje > 0 ? '+' : '';
-        return $signo . $porcentaje . '%';
+
+        return $signo.$porcentaje.'%';
     }
 
     public function getPalabrasClaveFormateadasAttribute(): array
@@ -350,11 +352,11 @@ class NarracionConsejoIa extends Model
         if (empty($this->sentimiento_analisis)) {
             return 'No analizado';
         }
-        
+
         $sentimiento = $this->sentimiento_analisis['sentimiento'] ?? 'neutral';
         $confianza = $this->sentimiento_analisis['confianza'] ?? 0;
-        
-        return ucfirst($sentimiento) . ' (' . round($confianza * 100, 1) . '%)';
+
+        return ucfirst($sentimiento).' ('.round($confianza * 100, 1).'%)';
     }
 
     // Mutators
@@ -404,7 +406,7 @@ class NarracionConsejoIa extends Model
     // Métodos
     public function mejorarConIa(array $parametros = []): bool
     {
-        if (!$this->puede_mejorar) {
+        if (! $this->puede_mejorar) {
             return false;
         }
 
@@ -412,7 +414,7 @@ class NarracionConsejoIa extends Model
 
         // Simular proceso de mejora con IA
         $narracionMejorada = $this->simularMejoraIa($this->narracion_original, $this->tipo_narracion);
-        
+
         $datosActualizacion = [
             'narracion_mejorada' => $narracionMejorada,
             'estado' => 'en_proceso',
@@ -421,7 +423,7 @@ class NarracionConsejoIa extends Model
             'parametros_mejora' => $parametros,
             'tiempo_procesamiento' => rand(1, 30) + (rand(0, 100) / 100), // Simular tiempo de procesamiento
             'nivel_confianza_ia' => rand(70, 95) / 100, // Simular nivel de confianza
-            'calidad_estimada' => rand(75, 95) / 100 // Simular calidad estimada
+            'calidad_estimada' => rand(75, 95) / 100, // Simular calidad estimada
         ];
 
         // Generar análisis adicionales
@@ -442,7 +444,7 @@ class NarracionConsejoIa extends Model
             'datos_anteriores' => ['estado' => 'pendiente'],
             'datos_nuevos' => ['estado' => 'en_proceso', 'fecha_mejora' => now()],
             'ip_cliente' => request()->ip(),
-            'user_agent' => request()->userAgent()
+            'user_agent' => request()->userAgent(),
         ]);
 
         return true;
@@ -450,13 +452,13 @@ class NarracionConsejoIa extends Model
 
     public function completarNarracion(): bool
     {
-        if (!$this->puede_completar) {
+        if (! $this->puede_completar) {
             return false;
         }
 
         $this->update([
             'estado' => 'completada',
-            'fecha_completada' => now()
+            'fecha_completada' => now(),
         ]);
 
         // Log de auditoría
@@ -469,7 +471,7 @@ class NarracionConsejoIa extends Model
             'datos_anteriores' => ['estado' => $this->getOriginal('estado')],
             'datos_nuevos' => ['estado' => 'completada'],
             'ip_cliente' => request()->ip(),
-            'user_agent' => request()->userAgent()
+            'user_agent' => request()->userAgent(),
         ]);
 
         return true;
@@ -478,8 +480,8 @@ class NarracionConsejoIa extends Model
     public function cambiarEstado(string $nuevoEstado): bool
     {
         $estadosValidos = ['pendiente', 'en_proceso', 'en_revision', 'completada', 'cancelada'];
-        
-        if (!in_array($nuevoEstado, $estadosValidos)) {
+
+        if (! in_array($nuevoEstado, $estadosValidos)) {
             return false;
         }
 
@@ -496,7 +498,7 @@ class NarracionConsejoIa extends Model
             'datos_anteriores' => ['estado' => $estadoAnterior],
             'datos_nuevos' => ['estado' => $nuevoEstado],
             'ip_cliente' => request()->ip(),
-            'user_agent' => request()->userAgent()
+            'user_agent' => request()->userAgent(),
         ]);
 
         return true;
@@ -510,11 +512,11 @@ class NarracionConsejoIa extends Model
             'tipo' => $tipo,
             'fecha' => now()->toISOString(),
             'usuario_id' => auth()->id() ?? $this->cliente_id,
-            'tipo_usuario' => 'cliente'
+            'tipo_usuario' => 'cliente',
         ];
-        
+
         $this->update(['comentarios_cliente' => $comentarios]);
-        
+
         return true;
     }
 
@@ -534,7 +536,7 @@ class NarracionConsejoIa extends Model
             'puede_mejorar' => $this->puede_mejorar,
             'puede_completar' => $this->puede_completar,
             'total_archivos' => $this->archivos()->count(),
-            'total_comentarios' => count($this->comentarios_cliente ?? [])
+            'total_comentarios' => count($this->comentarios_cliente ?? []),
         ];
     }
 
@@ -546,22 +548,23 @@ class NarracionConsejoIa extends Model
             'titulo' => $this->titulo,
             'narracion_original' => $this->narracion_original,
             'fecha_creacion' => $this->fecha_creacion->toISOString(),
-            'cliente_id' => $this->cliente_id
+            'cliente_id' => $this->cliente_id,
         ];
-        
+
         $hash = hash('sha256', json_encode($datos));
         $this->update(['hash_verificacion' => $hash]);
-        
+
         return $hash;
     }
 
     public function verificarIntegridad(): bool
     {
-        if (!$this->hash_verificacion) {
+        if (! $this->hash_verificacion) {
             return false;
         }
-        
+
         $hashCalculado = $this->generarHashVerificacion();
+
         return $hashCalculado === $this->hash_verificacion;
     }
 
@@ -573,24 +576,24 @@ class NarracionConsejoIa extends Model
             'mejora_fluidez' => 'Se ha mejorado la fluidez y coherencia del texto.',
             'ampliacion_contenido' => 'Se ha ampliado el contenido con información adicional relevante.',
             'reestructuracion' => 'Se ha reestructurado el texto para mejor comprensión.',
-            'enriquecimiento_vocabulario' => 'Se ha enriquecido el vocabulario utilizado.'
+            'enriquecimiento_vocabulario' => 'Se ha enriquecido el vocabulario utilizado.',
         ];
 
         $mejora = $mejoras[$tipo] ?? 'Se ha mejorado el texto utilizando técnicas de procesamiento de lenguaje natural.';
-        
-        return $texto . "\n\n[MEJORA APLICADA: {$mejora}]";
+
+        return $texto."\n\n[MEJORA APLICADA: {$mejora}]";
     }
 
     private function extraerPalabrasClave(string $texto): array
     {
         $palabras = str_word_count(strtolower($texto), 1, 'áéíóúñü');
-        $palabras = array_filter($palabras, function($palabra) {
+        $palabras = array_filter($palabras, function ($palabra) {
             return strlen($palabra) > 3;
         });
-        
+
         $frecuencia = array_count_values($palabras);
         arsort($frecuencia);
-        
+
         return array_slice(array_keys($frecuencia), 0, 10);
     }
 
@@ -598,13 +601,13 @@ class NarracionConsejoIa extends Model
     {
         $temas = ['general', 'tecnologia', 'salud', 'educacion', 'medio_ambiente', 'social', 'economia'];
         $temasIdentificados = [];
-        
+
         foreach ($temas as $tema) {
             if (rand(0, 1)) {
                 $temasIdentificados[] = $tema;
             }
         }
-        
+
         return empty($temasIdentificados) ? ['general'] : $temasIdentificados;
     }
 
@@ -613,11 +616,11 @@ class NarracionConsejoIa extends Model
         $sentimientos = ['positivo', 'negativo', 'neutral'];
         $sentimiento = $sentimientos[array_rand($sentimientos)];
         $confianza = rand(60, 95) / 100;
-        
+
         return [
             'sentimiento' => $sentimiento,
             'confianza' => $confianza,
-            'intensidad' => rand(1, 5)
+            'intensidad' => rand(1, 5),
         ];
     }
 
@@ -628,9 +631,9 @@ class NarracionConsejoIa extends Model
             'Revisar la estructura de párrafos',
             'Incluir ejemplos prácticos',
             'Mejorar la conclusión',
-            'Agregar transiciones entre ideas'
+            'Agregar transiciones entre ideas',
         ];
-        
+
         return array_slice($sugerencias, 0, rand(2, 4));
     }
 
@@ -643,15 +646,15 @@ class NarracionConsejoIa extends Model
             if (empty($narracion->codigo_narracion)) {
                 $narracion->codigo_narracion = static::generarCodigoNarracion();
             }
-            
+
             if (empty($narracion->fecha_creacion)) {
                 $narracion->fecha_creacion = now();
             }
-            
+
             if (empty($narracion->estado)) {
                 $narracion->estado = 'pendiente';
             }
-            
+
             if (empty($narracion->idioma_original)) {
                 $narracion->idioma_original = 'es';
             }
@@ -669,7 +672,7 @@ class NarracionConsejoIa extends Model
                     'datos_anteriores' => ['estado' => $narracion->getOriginal('estado')],
                     'datos_nuevos' => ['estado' => $narracion->estado],
                     'ip_cliente' => request()->ip(),
-                    'user_agent' => request()->userAgent()
+                    'user_agent' => request()->userAgent(),
                 ]);
             }
         });
@@ -679,7 +682,7 @@ class NarracionConsejoIa extends Model
     protected static function generarCodigoNarracion(): string
     {
         do {
-            $codigo = 'NAR-' . strtoupper(substr(md5(uniqid()), 0, 8));
+            $codigo = 'NAR-'.strtoupper(substr(md5(uniqid()), 0, 8));
         } while (static::where('codigo_narracion', $codigo)->exists());
 
         return $codigo;

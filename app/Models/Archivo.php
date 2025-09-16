@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Archivo extends Model
 {
@@ -57,7 +55,7 @@ class Archivo extends Model
         'calidad_estimada',
         'compresion_aplicada',
         'encriptacion',
-        'firma_digital'
+        'firma_digital',
     ];
 
     protected $casts = [
@@ -74,7 +72,7 @@ class Archivo extends Model
         'tamanio_bytes' => 'integer',
         'version' => 'integer',
         'calidad_estimada' => 'decimal:3,2',
-        'resolucion' => 'array'
+        'resolucion' => 'array',
     ];
 
     // Relaciones
@@ -166,7 +164,7 @@ class Archivo extends Model
         $query->where('narracion_id', $narracionId);
     }
 
-    public function scopePorRangoTamanio(Builder $query, int $tamanioMinimo, int $tamanioMaximo = null): void
+    public function scopePorRangoTamanio(Builder $query, int $tamanioMinimo, ?int $tamanioMaximo = null): void
     {
         if ($tamanioMaximo) {
             $query->whereBetween('tamanio_bytes', [$tamanioMinimo, $tamanioMaximo]);
@@ -280,30 +278,31 @@ class Archivo extends Model
 
     public function getDiasRestantesExpiracionAttribute(): int
     {
-        if (!$this->fecha_expiracion) {
+        if (! $this->fecha_expiracion) {
             return -1; // Sin fecha de expiración
         }
-        
+
         $dias = $this->fecha_expiracion->diffInDays(now(), false);
+
         return $dias > 0 ? $dias : 0;
     }
 
     public function getTamanioFormateadoAttribute(): string
     {
-        if (!$this->tamanio_bytes) {
+        if (! $this->tamanio_bytes) {
             return 'No especificado';
         }
-        
+
         $unidades = ['B', 'KB', 'MB', 'GB', 'TB'];
         $tamanio = $this->tamanio_bytes;
         $unidad = 0;
-        
+
         while ($tamanio >= 1024 && $unidad < count($unidades) - 1) {
             $tamanio /= 1024;
             $unidad++;
         }
-        
-        return round($tamanio, 2) . ' ' . $unidades[$unidad];
+
+        return round($tamanio, 2).' '.$unidades[$unidad];
     }
 
     public function getTamanioKBAttribute(): float
@@ -353,7 +352,7 @@ class Archivo extends Model
 
     public function getPuedeDescargarAttribute(): bool
     {
-        return $this->estado === 'activo' && !$this->esta_expirado;
+        return $this->estado === 'activo' && ! $this->esta_expirado;
     }
 
     public function getPuedeEliminarAttribute(): bool
@@ -368,59 +367,60 @@ class Archivo extends Model
 
     public function getUrlDescargaAttribute(): string
     {
-        if (!$this->puede_descargar) {
+        if (! $this->puede_descargar) {
             return '';
         }
-        
+
         return route('archivos.descargar', $this->id);
     }
 
     public function getUrlVistaPreviaAttribute(): string
     {
-        if (!$this->es_imagen || !$this->puede_descargar) {
+        if (! $this->es_imagen || ! $this->puede_descargar) {
             return '';
         }
-        
+
         return route('archivos.vista-previa', $this->id);
     }
 
     public function getCalidadFormateadaAttribute(): string
     {
-        if (!$this->calidad_estimada) {
+        if (! $this->calidad_estimada) {
             return 'No evaluada';
         }
-        
+
         $porcentaje = round($this->calidad_estimada * 100, 1);
-        return $porcentaje . '%';
+
+        return $porcentaje.'%';
     }
 
     public function getResolucionFormateadaAttribute(): string
     {
-        if (empty($this->resolucion) || !isset($this->resolucion['ancho']) || !isset($this->resolucion['alto'])) {
+        if (empty($this->resolucion) || ! isset($this->resolucion['ancho']) || ! isset($this->resolucion['alto'])) {
             return 'No especificada';
         }
-        
-        return $this->resolucion['ancho'] . 'x' . $this->resolucion['alto'];
+
+        return $this->resolucion['ancho'].'x'.$this->resolucion['alto'];
     }
 
     public function getUbicacionFormateadaAttribute(): string
     {
-        if (!$this->ubicacion_geografica) {
+        if (! $this->ubicacion_geografica) {
             return 'No especificada';
         }
-        
+
         $partes = [$this->ubicacion_geografica];
-        
+
         if ($this->tiene_coordenadas) {
             $partes[] = "({$this->coordenadas_lat}, {$this->coordenadas_lng})";
         }
-        
+
         return implode(' ', $partes);
     }
 
     public function getTieneCoordenadasAttribute(): bool
     {
-        return !is_null($this->coordenadas_lat) && !is_null($this->coordenadas_lng);
+        return ! is_null($this->coordenadas_lat) && ! is_null($this->coordenadas_lng);
     }
 
     public function getCoordenadasAttribute(): array
@@ -428,10 +428,10 @@ class Archivo extends Model
         if ($this->tiene_coordenadas) {
             return [
                 'lat' => (float) $this->coordenadas_lat,
-                'lng' => (float) $this->coordenadas_lng
+                'lng' => (float) $this->coordenadas_lng,
             ];
         }
-        
+
         return [];
     }
 
@@ -498,8 +498,8 @@ class Archivo extends Model
     public function cambiarEstado(string $nuevoEstado): bool
     {
         $estadosValidos = ['activo', 'inactivo', 'archivado', 'eliminado'];
-        
-        if (!in_array($nuevoEstado, $estadosValidos)) {
+
+        if (! in_array($nuevoEstado, $estadosValidos)) {
             return false;
         }
 
@@ -516,7 +516,7 @@ class Archivo extends Model
             'datos_anteriores' => ['estado' => $estadoAnterior],
             'datos_nuevos' => ['estado' => $nuevoEstado],
             'ip_cliente' => request()->ip(),
-            'user_agent' => request()->userAgent()
+            'user_agent' => request()->userAgent(),
         ]);
 
         return true;
@@ -526,10 +526,10 @@ class Archivo extends Model
     {
         $metadatosActuales = $this->metadatos ?? [];
         $metadatosActualizados = array_merge($metadatosActuales, $nuevosMetadatos);
-        
+
         $this->update([
             'metadatos' => $metadatosActualizados,
-            'fecha_modificacion' => now()
+            'fecha_modificacion' => now(),
         ]);
 
         return true;
@@ -538,11 +538,11 @@ class Archivo extends Model
     public function agregarTag(string $tag): bool
     {
         $tags = $this->tags ?? [];
-        if (!in_array(strtolower($tag), $tags)) {
+        if (! in_array(strtolower($tag), $tags)) {
             $tags[] = strtolower($tag);
             $this->update(['tags' => $tags]);
         }
-        
+
         return true;
     }
 
@@ -550,23 +550,23 @@ class Archivo extends Model
     {
         $tags = $this->tags ?? [];
         $tagLower = strtolower($tag);
-        
+
         if (($key = array_search($tagLower, $tags)) !== false) {
             unset($tags[$key]);
             $this->update(['tags' => array_values($tags)]);
         }
-        
+
         return true;
     }
 
     public function agregarPalabraClave(string $palabra): bool
     {
         $palabras = $this->palabras_clave ?? [];
-        if (!in_array(strtolower($palabra), $palabras)) {
+        if (! in_array(strtolower($palabra), $palabras)) {
             $palabras[] = strtolower($palabra);
             $this->update(['palabras_clave' => $palabras]);
         }
-        
+
         return true;
     }
 
@@ -575,14 +575,16 @@ class Archivo extends Model
         if ($fecha <= now()) {
             return false;
         }
-        
+
         $this->update(['fecha_expiracion' => $fecha]);
+
         return true;
     }
 
     public function renovarExpiracion(int $diasAdicionales = 30): bool
     {
         $nuevaFecha = now()->addDays($diasAdicionales);
+
         return $this->establecerFechaExpiracion($nuevaFecha);
     }
 
@@ -594,22 +596,23 @@ class Archivo extends Model
             'nombre_original' => $this->nombre_original,
             'tamanio_bytes' => $this->tamanio_bytes,
             'fecha_subida' => $this->fecha_subida->toISOString(),
-            'hash_archivo' => $this->hash_archivo
+            'hash_archivo' => $this->hash_archivo,
         ];
-        
+
         $hash = hash('sha256', json_encode($datos));
         $this->update(['hash_verificacion' => $hash]);
-        
+
         return $hash;
     }
 
     public function verificarIntegridad(): bool
     {
-        if (!$this->hash_verificacion || !$this->hash_archivo) {
+        if (! $this->hash_verificacion || ! $this->hash_archivo) {
             return false;
         }
-        
+
         $hashCalculado = $this->generarHashVerificacion();
+
         return $hashCalculado === $this->hash_verificacion;
     }
 
@@ -635,7 +638,7 @@ class Archivo extends Model
             'resolucion' => $this->resolucion_formateada,
             'ubicacion' => $this->ubicacion_formateada,
             'total_tags' => count($this->tags ?? []),
-            'total_palabras_clave' => count($this->palabras_clave ?? [])
+            'total_palabras_clave' => count($this->palabras_clave ?? []),
         ];
     }
 
@@ -643,6 +646,7 @@ class Archivo extends Model
     {
         // Simular cálculo de tamaño en disco (considerando overhead del sistema de archivos)
         $overhead = 1.1; // 10% de overhead
+
         return $this->tamanio_bytes * $overhead;
     }
 
@@ -665,15 +669,15 @@ class Archivo extends Model
             if (empty($archivo->codigo_archivo)) {
                 $archivo->codigo_archivo = static::generarCodigoArchivo();
             }
-            
+
             if (empty($archivo->fecha_subida)) {
                 $archivo->fecha_subida = now();
             }
-            
+
             if (empty($archivo->estado)) {
                 $archivo->estado = 'activo';
             }
-            
+
             if (empty($archivo->version)) {
                 $archivo->version = 1;
             }
@@ -691,7 +695,7 @@ class Archivo extends Model
                     'datos_anteriores' => ['estado' => $archivo->getOriginal('estado')],
                     'datos_nuevos' => ['estado' => $archivo->estado],
                     'ip_cliente' => request()->ip(),
-                    'user_agent' => request()->userAgent()
+                    'user_agent' => request()->userAgent(),
                 ]);
             }
         });
@@ -701,7 +705,7 @@ class Archivo extends Model
     protected static function generarCodigoArchivo(): string
     {
         do {
-            $codigo = 'ARC-' . strtoupper(substr(md5(uniqid()), 0, 8));
+            $codigo = 'ARC-'.strtoupper(substr(md5(uniqid()), 0, 8));
         } while (static::where('codigo_archivo', $codigo)->exists());
 
         return $codigo;

@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cliente;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -26,20 +26,20 @@ class ClienteControlador extends Controller
             }
 
             if ($request->filled('ciudad')) {
-                $query->where('Ciudad', 'like', '%' . $request->ciudad . '%');
+                $query->where('Ciudad', 'like', '%'.$request->ciudad.'%');
             }
 
             if ($request->filled('departamento')) {
-                $query->where('Departamento', 'like', '%' . $request->departamento . '%');
+                $query->where('Departamento', 'like', '%'.$request->departamento.'%');
             }
 
             if ($request->filled('buscar')) {
                 $buscar = $request->buscar;
                 $query->where(function ($q) use ($buscar) {
-                    $q->where('Nombres', 'like', '%' . $buscar . '%')
-                      ->orWhere('Apellidos', 'like', '%' . $buscar . '%')
-                      ->orWhere('Correo', 'like', '%' . $buscar . '%')
-                      ->orWhere('DocumentoIdentidad', 'like', '%' . $buscar . '%');
+                    $q->where('Nombres', 'like', '%'.$buscar.'%')
+                        ->orWhere('Apellidos', 'like', '%'.$buscar.'%')
+                        ->orWhere('Correo', 'like', '%'.$buscar.'%')
+                        ->orWhere('DocumentoIdentidad', 'like', '%'.$buscar.'%');
                 });
             }
 
@@ -61,13 +61,13 @@ class ClienteControlador extends Controller
                     'per_page' => $clientes->perPage(),
                     'total' => $clientes->total(),
                 ],
-                'message' => 'Clientes obtenidos exitosamente'
+                'message' => 'Clientes obtenidos exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener clientes: ' . $e->getMessage()
+                'message' => 'Error al obtener clientes: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -80,23 +80,23 @@ class ClienteControlador extends Controller
         try {
             $cliente = Cliente::with(['pqrsfds', 'donaciones', 'documentos'])->find($id);
 
-            if (!$cliente) {
+            if (! $cliente) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cliente no encontrado'
+                    'message' => 'Cliente no encontrado',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
                 'data' => $cliente,
-                'message' => 'Cliente obtenido exitosamente'
+                'message' => 'Cliente obtenido exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener cliente: ' . $e->getMessage()
+                'message' => 'Error al obtener cliente: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -119,14 +119,14 @@ class ClienteControlador extends Controller
                 'Departamento' => 'required|string|max:100',
                 'FechaNacimiento' => 'sometimes|date|before:today',
                 'Genero' => 'sometimes|in:masculino,femenino,otro',
-                'Estado' => 'required|in:activo,inactivo,suspendido'
+                'Estado' => 'required|in:activo,inactivo,suspendido',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -139,13 +139,13 @@ class ClienteControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $cliente,
-                'message' => 'Cliente creado exitosamente'
+                'message' => 'Cliente creado exitosamente',
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear cliente: ' . $e->getMessage()
+                'message' => 'Error al crear cliente: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -158,10 +158,10 @@ class ClienteControlador extends Controller
         try {
             $cliente = Cliente::find($id);
 
-            if (!$cliente) {
+            if (! $cliente) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cliente no encontrado'
+                    'message' => 'Cliente no encontrado',
                 ], 404);
             }
 
@@ -172,13 +172,13 @@ class ClienteControlador extends Controller
                     'sometimes',
                     'required',
                     'string',
-                    Rule::unique('Clientes', 'DocumentoIdentidad')->ignore($id, 'IdCliente')
+                    Rule::unique('Clientes', 'DocumentoIdentidad')->ignore($id, 'IdCliente'),
                 ],
                 'Correo' => [
                     'sometimes',
                     'required',
                     'email',
-                    Rule::unique('Clientes', 'Correo')->ignore($id, 'IdCliente')
+                    Rule::unique('Clientes', 'Correo')->ignore($id, 'IdCliente'),
                 ],
                 'Telefono' => 'sometimes|required|string|max:20',
                 'Direccion' => 'sometimes|required|string|max:500',
@@ -186,14 +186,14 @@ class ClienteControlador extends Controller
                 'Departamento' => 'sometimes|required|string|max:100',
                 'FechaNacimiento' => 'sometimes|date|before:today',
                 'Genero' => 'sometimes|in:masculino,femenino,otro',
-                'Estado' => 'sometimes|required|in:activo,inactivo,suspendido'
+                'Estado' => 'sometimes|required|in:activo,inactivo,suspendido',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -202,13 +202,13 @@ class ClienteControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $cliente,
-                'message' => 'Cliente actualizado exitosamente'
+                'message' => 'Cliente actualizado exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar cliente: ' . $e->getMessage()
+                'message' => 'Error al actualizar cliente: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -221,10 +221,10 @@ class ClienteControlador extends Controller
         try {
             $cliente = Cliente::find($id);
 
-            if (!$cliente) {
+            if (! $cliente) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cliente no encontrado'
+                    'message' => 'Cliente no encontrado',
                 ], 404);
             }
 
@@ -232,7 +232,7 @@ class ClienteControlador extends Controller
             if ($cliente->veedurias()->where('Estado', '!=', 'completada')->exists()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No se puede eliminar el cliente porque tiene veedurías activas'
+                    'message' => 'No se puede eliminar el cliente porque tiene veedurías activas',
                 ], 400);
             }
 
@@ -240,13 +240,13 @@ class ClienteControlador extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Cliente eliminado exitosamente'
+                'message' => 'Cliente eliminado exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar cliente: ' . $e->getMessage()
+                'message' => 'Error al eliminar cliente: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -279,19 +279,19 @@ class ClienteControlador extends Controller
                     ->whereYear('FechaRegistro', date('Y'))
                     ->groupBy('mes')
                     ->orderBy('mes')
-                    ->get()
+                    ->get(),
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $estadisticas,
-                'message' => 'Estadísticas obtenidas exitosamente'
+                'message' => 'Estadísticas obtenidas exitosamente',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+                'message' => 'Error al obtener estadísticas: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -304,14 +304,14 @@ class ClienteControlador extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'DocumentoIdentidad' => 'required|string',
-                'Correo' => 'required|email'
+                'Correo' => 'required|email',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Datos de validación incorrectos',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -322,19 +322,19 @@ class ClienteControlador extends Controller
             if ($cliente) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'El documento de identidad o correo ya están registrados'
+                    'message' => 'El documento de identidad o correo ya están registrados',
                 ], 409);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Perfil disponible para registro'
+                'message' => 'Perfil disponible para registro',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al verificar perfil: ' . $e->getMessage()
+                'message' => 'Error al verificar perfil: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -346,23 +346,23 @@ class ClienteControlador extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'Estado' => 'required|in:activo,inactivo,suspendido'
+                'Estado' => 'required|in:activo,inactivo,suspendido',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Estado no válido',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $cliente = Cliente::find($id);
 
-            if (!$cliente) {
+            if (! $cliente) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cliente no encontrado'
+                    'message' => 'Cliente no encontrado',
                 ], 404);
             }
 
@@ -372,13 +372,13 @@ class ClienteControlador extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $cliente,
-                'message' => "Estado del cliente cambiado de '{$estadoAnterior}' a '{$request->Estado}' exitosamente"
+                'message' => "Estado del cliente cambiado de '{$estadoAnterior}' a '{$request->Estado}' exitosamente",
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al cambiar estado: ' . $e->getMessage()
+                'message' => 'Error al cambiar estado: '.$e->getMessage(),
             ], 500);
         }
     }
