@@ -23,7 +23,7 @@ return new class extends Migration
                 $table->json('permisos_especiales')->nullable();
                 $table->timestamps();
                 
-                $table->index(['nivel', 'es_activo']);
+                $table->index(['nivel', 'es_activo'], 'idx_roles_nivel_activo');
             });
         } else {
             // Si la tabla existe, solo agregar columnas faltantes

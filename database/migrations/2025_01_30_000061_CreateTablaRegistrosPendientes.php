@@ -29,11 +29,11 @@ return new class extends Migration
             $table->timestamp('email_verificado_at')->nullable();
             $table->timestamps();
 
-            // Índices
-            $table->index(['estado', 'rol_solicitado']);
-            $table->index(['email']);
-            $table->index(['token_verificacion']);
-            $table->index(['fecha_aprobacion']);
+            // Índices optimizados con nombres descriptivos
+            $table->index(['estado', 'rol_solicitado'], 'idx_reg_pend_estado_rol');
+            $table->index(['email'], 'idx_reg_pend_email');
+            $table->index(['token_verificacion'], 'idx_reg_pend_token');
+            $table->index(['fecha_aprobacion'], 'idx_reg_pend_fecha_aprob');
 
             // Clave foránea
             $table->foreign('aprobado_por')->references('IdUsuario')->on('usuariossistema')->onDelete('set null');

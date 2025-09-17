@@ -25,8 +25,8 @@ return new class extends Migration
             $table->integer('orden')->default(0);
             $table->timestamps();
             
-            $table->index(['categoria', 'grupo']);
-            $table->index(['es_publica', 'es_editable']);
+            $table->index(['categoria', 'grupo'], 'idx_config_cat_grupo');
+            $table->index(['es_publica', 'es_editable'], 'idx_config_publica_editable');
         });
     }
 

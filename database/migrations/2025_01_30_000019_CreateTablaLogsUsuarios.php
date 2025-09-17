@@ -30,12 +30,12 @@ return new class extends Migration
             $table->timestamp('FechaAccion')->useCurrent();
             $table->timestamps();
 
-            // Índices
-            $table->index(['FechaAccion']);
-            $table->index(['TipoAccion', 'FechaAccion']);
-            $table->index(['Modulo', 'Funcion']);
-            $table->index(['NivelImportancia', 'FechaAccion']);
-            $table->index(['Estado', 'FechaAccion']);
+            // Índices optimizados con nombres descriptivos
+            $table->index(['FechaAccion'], 'idx_logs_fecha');
+            $table->index(['TipoAccion', 'FechaAccion'], 'idx_logs_tipo_fecha');
+            $table->index(['Modulo', 'Funcion'], 'idx_logs_modulo_funcion');
+            $table->index(['NivelImportancia', 'FechaAccion'], 'idx_logs_nivel_fecha');
+            $table->index(['Estado', 'FechaAccion'], 'idx_logs_estado_fecha');
         });
     }
 

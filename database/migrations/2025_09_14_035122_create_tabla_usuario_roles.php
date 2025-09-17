@@ -30,7 +30,7 @@ return new class extends Migration
                 $table->foreign('revocado_por')->references('IdUsuario')->on('usuariossistema')->onDelete('set null');
                 
                 $table->unique(['usuario_id', 'rol_id']);
-                $table->index(['asignado_en', 'revocado_en']);
+                $table->index(['asignado_en', 'revocado_en'], 'idx_usr_rol_asig_revoc');
             });
         } else {
             // Si la tabla existe, solo agregar columnas faltantes

@@ -22,29 +22,29 @@ class ClienteControlador extends Controller
 
             // Filtros
             if ($request->filled('estado')) {
-                $query->where('Estado', $request->estado);
+                $query->where('estado', $request->estado);
             }
 
             if ($request->filled('ciudad')) {
-                $query->where('Ciudad', 'like', '%'.$request->ciudad.'%');
+                $query->where('ciudad', 'like', '%'.$request->ciudad.'%');
             }
 
             if ($request->filled('departamento')) {
-                $query->where('Departamento', 'like', '%'.$request->departamento.'%');
+                $query->where('departamento', 'like', '%'.$request->departamento.'%');
             }
 
             if ($request->filled('buscar')) {
                 $buscar = $request->buscar;
                 $query->where(function ($q) use ($buscar) {
-                    $q->where('Nombres', 'like', '%'.$buscar.'%')
-                        ->orWhere('Apellidos', 'like', '%'.$buscar.'%')
-                        ->orWhere('Correo', 'like', '%'.$buscar.'%')
-                        ->orWhere('DocumentoIdentidad', 'like', '%'.$buscar.'%');
+                    $q->where('nombres', 'like', '%'.$buscar.'%')
+                        ->orWhere('apellidos', 'like', '%'.$buscar.'%')
+                        ->orWhere('correo', 'like', '%'.$buscar.'%')
+                        ->orWhere('documento_identidad', 'like', '%'.$buscar.'%');
                 });
             }
 
             // Ordenamiento
-            $orden = $request->get('orden', 'Nombres');
+            $orden = $request->get('orden', 'nombres');
             $direccion = $request->get('direccion', 'asc');
             $query->orderBy($orden, $direccion);
 

@@ -27,7 +27,7 @@ return new class extends Migration
                 $table->foreign('asignado_por')->references('IdUsuario')->on('usuariossistema')->onDelete('set null');
                 
                 $table->unique(['rol_id', 'permiso_id']);
-                $table->index(['otorgado', 'asignado_en']);
+                $table->index(['otorgado', 'asignado_en'], 'idx_rol_perm_otorgado_asig');
             });
         } else {
             // Si la tabla existe, solo agregar columnas faltantes

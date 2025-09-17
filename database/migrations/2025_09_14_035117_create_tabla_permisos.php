@@ -24,8 +24,8 @@ return new class extends Migration
                 $table->integer('nivel_requerido')->default(1);
                 $table->timestamps();
                 
-                $table->index(['categoria', 'recurso', 'accion']);
-                $table->index(['es_activo', 'nivel_requerido']);
+                $table->index(['categoria', 'recurso', 'accion'], 'idx_perm_cat_rec_acc');
+                $table->index(['es_activo', 'nivel_requerido'], 'idx_perm_activo_nivel');
             });
         } else {
             // Si la tabla existe, solo agregar columnas faltantes

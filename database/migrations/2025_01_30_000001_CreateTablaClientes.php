@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('nombres', 100);
             $table->string('apellidos', 100);
+            $table->string('usuario', 50)->unique();
             $table->string('correo', 150)->unique();
             $table->string('contrasena', 255);
             $table->string('telefono', 20)->nullable();

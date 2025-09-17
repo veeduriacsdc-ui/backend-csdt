@@ -15,31 +15,14 @@ class Operador extends Authenticatable
     protected $table = 'operadores';
 
     protected $fillable = [
-        'nombres',
-        'apellidos',
-        'correo',
-        'usuario',
-        'contrasena',
-        'telefono',
-        'documento_identidad',
-        'tipo_documento',
-        'departamento',
-        'ciudad',
-        'direccion',
-        'fecha_nacimiento',
-        'estado',
-        'rol',
-        'profesion',
-        'especializacion',
-        'acepto_terminos',
-        'acepto_politicas',
-        'ultimo_acceso',
-        'supervisor_id',
-        'especialidad',
-        'nivel_experiencia',
-        'certificaciones',
-        'observaciones',
-        'activo'
+        'nombres', 'apellidos', 'usuario', 'correo', 'contrasena', 'telefono',
+        'documento_identidad', 'tipo_documento', 'fecha_nacimiento', 'direccion',
+        'ciudad', 'departamento', 'codigo_postal', 'genero', 'profesion',
+        'especializacion', 'numero_matricula', 'entidad_matricula', 'anos_experiencia',
+        'perfil_profesional', 'areas_expertise', 'linkedin', 'sitio_web',
+        'acepto_terminos', 'acepto_politicas', 'correo_verificado', 'correo_verificado_en',
+        'perfil_verificado', 'perfil_verificado_en', 'ultimo_acceso', 'estado',
+        'notas', 'rol',
     ];
 
     protected $hidden = [

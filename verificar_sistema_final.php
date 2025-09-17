@@ -26,19 +26,24 @@ foreach ($extensiones as $ext) {
 echo "\n2️⃣ VERIFICANDO BASE DE DATOS...\n";
 echo "===============================\n";
 try {
-    $pdo = new PDO('mysql:host=127.0.0.1;dbname=csdt_database', 'root', '');
+    $pdo = new PDO('mysql:host=127.0.0.1;dbname=csdt_veeduria', 'root', '');
     echo "✅ Conexión a MySQL exitosa\n";
     
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM clientes");
-    $clientes = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    echo "✅ Clientes registrados: $clientes\n";
-    
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM operadores");
-    $operadores = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    echo "✅ Operadores registrados: $operadores\n";
+    // Verificar tablas principales
+    $tablas = ['clientes', 'operadores', 'pqrsfd', 'donaciones'];
+    foreach ($tablas as $tabla) {
+        try {
+            $stmt = $pdo->query("SELECT COUNT(*) as total FROM $tabla");
+            $total = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+            echo "✅ $tabla: $total registros\n";
+        } catch (Exception $e) {
+            echo "⚠️  $tabla: Tabla no encontrada o sin datos\n";
+        }
+    }
     
 } catch (Exception $e) {
     echo "❌ Error de conexión: " . $e->getMessage() . "\n";
+    echo "💡 Asegúrate de que XAMPP esté ejecutándose y la base de datos 'csdt_veeduria' exista\n";
 }
 
 // 3. Verificar servidores

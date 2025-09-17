@@ -15,7 +15,7 @@ class Cliente extends Authenticatable
     protected $table = 'clientes';
 
     protected $fillable = [
-        'nombres', 'apellidos', 'correo', 'usuario', 'contrasena', 'telefono',
+        'nombres', 'apellidos', 'usuario', 'correo', 'contrasena', 'telefono',
         'documento_identidad', 'tipo_documento', 'fecha_nacimiento', 'direccion',
         'ciudad', 'departamento', 'codigo_postal', 'genero', 'acepto_terminos',
         'acepto_politicas', 'correo_verificado', 'correo_verificado_en',

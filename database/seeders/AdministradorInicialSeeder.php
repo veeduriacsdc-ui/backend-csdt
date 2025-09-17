@@ -27,6 +27,7 @@ class AdministradorInicialSeeder extends Seeder
             $administrador = Operador::create([
                 'nombres' => 'Esteban',
                 'apellidos' => 'Administrador',
+                'usuario' => 'admin',
                 'correo' => 'esteban.41m@gmail.com',
                 'contrasena' => Hash::make('123456'),
                 'telefono' => '+57 300 123 4567',
