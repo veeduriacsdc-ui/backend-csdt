@@ -3,15 +3,40 @@ module.exports = {
         name: 'backend-csdt',
         script: 'artisan',
         args: 'serve --host=0.0.0.0 --port=8000',
+        cwd: '/var/www/backend-csdt',
         instances: 1,
         exec_mode: 'fork',
         env: {
             NODE_ENV: 'development',
-            APP_ENV: 'local'
+            APP_ENV: 'local',
+            APP_URL: 'http://localhost:8000',
+            DB_CONNECTION: 'mysql',
+            DB_HOST: '127.0.0.1',
+            DB_PORT: '3306',
+            DB_DATABASE: 'csdt_final',
+            DB_USERNAME: 'csdt',
+            DB_PASSWORD: '123',
+            REDIS_HOST: '127.0.0.1',
+            REDIS_PORT: '6379',
+            CACHE_DRIVER: 'redis',
+            SESSION_DRIVER: 'redis',
+            QUEUE_CONNECTION: 'redis'
         },
         env_production: {
             NODE_ENV: 'production',
-            APP_ENV: 'production'
+            APP_ENV: 'production',
+            APP_URL: 'http://64.225.113.49:8000',
+            DB_CONNECTION: 'mysql',
+            DB_HOST: '127.0.0.1',
+            DB_PORT: '3306',
+            DB_DATABASE: 'csdt_final',
+            DB_USERNAME: 'csdt',
+            DB_PASSWORD: '123',
+            REDIS_HOST: '127.0.0.1',
+            REDIS_PORT: '6379',
+            CACHE_DRIVER: 'redis',
+            SESSION_DRIVER: 'redis',
+            QUEUE_CONNECTION: 'redis'
         },
         log_file: '/var/log/backend-csdt/combined.log',
         out_file: '/var/log/backend-csdt/out.log',
@@ -20,9 +45,15 @@ module.exports = {
         merge_logs: true,
         max_memory_restart: '512M',
         watch: false,
-        ignore_watch: ['node_modules', 'storage/logs', 'vendor'],
+        ignore_watch: ['node_modules', 'storage/logs', 'vendor', 'ayuda'],
         restart_delay: 4000,
         max_restarts: 10,
-        min_uptime: '10s'
+        min_uptime: '10s',
+        kill_timeout: 5000,
+        wait_ready: true,
+        listen_timeout: 10000,
+        autorestart: true,
+        max_memory_restart: '1G',
+        node_args: '--max-old-space-size=1024'
     }]
 };
