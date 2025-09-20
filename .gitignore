@@ -1,6 +1,6 @@
+# Archivos temporales y de configuración local
 .phpunit.cache
 bootstrap/ssr
-node_modules
 public/build
 public/hot
 public/storage
@@ -9,7 +9,6 @@ resources/js/routes
 resources/js/wayfinder
 storage/*.key
 storage/pail
-vendor
 .env
 .env.backup
 .env.production
@@ -26,3 +25,6 @@ auth.json
 .nova
 .vscode
 .zed
+
+# NOTA: node_modules y vendor están incluidos intencionalmente
+# para facilitar el despliegue sin instalación de dependencias
