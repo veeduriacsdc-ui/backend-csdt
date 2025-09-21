@@ -12,14 +12,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            SeederLocalSimplificado::class, // Seeder simplificado para base de datos local
-            // AdministradorInicialSeeder::class, // Comentado temporalmente
-            // UsuarioSistemaSeeder::class, // Comentado temporalmente
-            // PermisosRolesSeeder::class, // Comentado temporalmente
-            // ConfiguracionInicialSeeder::class, // Comentado temporalmente
+            OperadoresSeeder::class,    // Crear operadores
+            UsuariosSistemaSeeder::class, // Crear usuarios del sistema
         ]);
 
-        $this->command->info('Base de datos poblada exitosamente.');
-        $this->command->info('Sistema listo para uso.');
+        $this->command->info('🎉 Base de datos poblada exitosamente.');
+        $this->command->info('🚀 Sistema listo para uso.');
     }
 }
