@@ -1,30 +1,55 @@
-# Archivos temporales y de configuración local
+# Archivos de configuración sensibles
+.env
+.env.backup
+.env.production
+.env.local
+.env.testing
+
+# Archivos de caché y temporales
 .phpunit.cache
-bootstrap/ssr
+.phpunit.result.cache
+bootstrap/cache/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+storage/pail
+storage/*.key
+
+# Archivos de build y compilación
 public/build
 public/hot
 public/storage
 resources/js/actions
 resources/js/routes
 resources/js/wayfinder
-storage/*.key
-storage/pail
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
-npm-debug.log
-yarn-error.log
-.js
-auth.json
+
+# Archivos de IDE y editores
 .fleet
 .idea
 .nova
 .vscode
 .zed
+.phpactor.json
+
+# Archivos de configuración local
+Homestead.json
+Homestead.yaml
+auth.json
+
+# Logs de npm/yarn
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de backup
+*.backup
+*.bak
+*.tmp
 
 # NOTA: node_modules y vendor están incluidos intencionalmente
 # para facilitar el despliegue sin instalación de dependencias
