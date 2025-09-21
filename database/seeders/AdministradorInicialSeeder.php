@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Operador;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AdministradorInicialSeeder extends Seeder
 {
@@ -14,17 +14,18 @@ class AdministradorInicialSeeder extends Seeder
     public function run(): void
     {
         try {
-            // Verificar si ya existe un administrador
-            $administradorExistente = Operador::where('rol', 'administrador')->first();
+            // Verificar si ya existe un administrador usando DB directo
+            $administradorExistente = DB::table('operadores')
+                ->where('rol', 'administrador')
+                ->first();
 
             if ($administradorExistente) {
                 $this->command->info('Ya existe un administrador en el sistema.');
-
                 return;
             }
 
-            // Crear el usuario administrador inicial
-            $administrador = Operador::create([
+            // Crear el usuario administrador inicial usando DB directo
+            $administradorId = DB::table('operadores')->insertGetId([
                 'nombres' => 'Esteban',
                 'apellidos' => 'Administrador',
                 'usuario' => 'admin',
@@ -56,23 +57,21 @@ class AdministradorInicialSeeder extends Seeder
                 'correo_verificado_en' => now(),
                 'notas' => 'Usuario administrador inicial del sistema',
                 'ultimo_acceso' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
-
-            // Nota: La tabla sesiones no existe en las migraciones actuales
-            // Se omite la creación de sesión por ahora
-
-            // Log de auditoría - Nota: Se omite por ahora ya que la tabla puede no existir
 
             $this->command->info('Usuario administrador inicial creado exitosamente.');
             $this->command->info('Nombre: Esteban Administrador');
             $this->command->info('Email: esteban.41m@gmail.com');
             $this->command->info('Contraseña: 123456');
             $this->command->info('Rol: Administrador (Super)');
-            $this->command->info('ID del administrador: '.$administrador->id);
+            $this->command->info('ID del administrador: '.$administradorId);
 
         } catch (\Exception $e) {
             $this->command->error('Error al crear el administrador inicial: '.$e->getMessage());
-            throw $e;
+            // No lanzar la excepción para que continúe con otros seeders
+            $this->command->warn('Continuando con otros seeders...');
         }
     }
 }

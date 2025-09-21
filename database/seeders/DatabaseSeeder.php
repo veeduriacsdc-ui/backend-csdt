@@ -12,8 +12,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            AdministradorInicialSeeder::class,
-            UsuarioSistemaSeeder::class,
+            SeederLocalSimplificado::class, // Seeder simplificado para base de datos local
+            // AdministradorInicialSeeder::class, // Comentado temporalmente
+            // UsuarioSistemaSeeder::class, // Comentado temporalmente
             // PermisosRolesSeeder::class, // Comentado temporalmente
             // ConfiguracionInicialSeeder::class, // Comentado temporalmente
         ]);
