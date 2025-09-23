@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import laravel from 'laravel-vite-plugin'
 import react from '@vitejs/plugin-react'
-import wayfinder from '@laravel/vite-plugin-wayfinder'
 
 export default defineConfig({
   plugins: [
@@ -11,12 +10,6 @@ export default defineConfig({
       refresh: true,
     }),
     react(),
-    wayfinder({
-      // Configuración de Wayfinder para Laravel
-      pages: 'resources/js/pages',
-      layouts: 'resources/js/layouts',
-      components: 'resources/js/components',
-    }),
   ],
   server: {
     host: '0.0.0.0',
