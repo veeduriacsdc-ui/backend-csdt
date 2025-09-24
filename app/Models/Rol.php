@@ -4,135 +4,118 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Rol extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $table = 'roles';
-
-    protected $primaryKey = 'id';
-
+    
     protected $fillable = [
-        'nombre',
-        'slug',
-        'descripcion',
-        'tipo',
-        'activo',
-        'editable',
-        'nivel_acceso',
-        'es_activo',
-        'es_sistema',
-        'permisos_especiales',
+        'nom', 'des', 'est', 'per'
     ];
 
     protected $casts = [
-        'activo' => 'boolean',
-        'editable' => 'boolean',
-        'nivel_acceso' => 'integer',
-        'es_activo' => 'boolean',
-        'es_sistema' => 'boolean',
-        'permisos_especiales' => 'array',
+        'per' => 'array',
     ];
 
     // Relaciones
-    public function permisos()
-    {
-        return $this->belongsToMany(Permiso::class, 'rol_permisos', 'rol_id', 'permiso_id')
-            ->withPivot('otorgado', 'asignado_en', 'asignado_por')
-            ->withTimestamps();
-    }
-
     public function usuarios()
     {
-        return $this->hasMany(UsuarioRol::class, 'rol_id');
+        return $this->belongsToMany(Usuario::class, 'usuarios_roles', 'rol_id', 'usu_id')
+            ->withPivot('act', 'asig_en', 'asig_por', 'not')
+            ->withTimestamps();
     }
 
     // Scopes
     public function scopeActivos($query)
     {
-        return $query->where('activo', true);
+        return $query->where('est', 'act');
     }
 
-    public function scopeSistema($query)
+    public function scopeInactivos($query)
     {
-        return $query->where('tipo', 'Sistema');
+        return $query->where('est', 'ina');
     }
 
-    public function scopePersonalizados($query)
+    // Métodos de negocio
+    public function getEstadoColorAttribute()
     {
-        return $query->where('tipo', 'Personalizado');
+        return match ($this->est) {
+            'act' => 'success',
+            'ina' => 'danger',
+            default => 'secondary'
+        };
     }
 
-    public function scopePorNivelAcceso($query, $nivel)
+    public function getEstadoTextoAttribute()
     {
-        return $query->where('nivel_acceso', $nivel);
+        return match ($this->est) {
+            'act' => 'Activo',
+            'ina' => 'Inactivo',
+            default => 'Desconocido'
+        };
     }
 
-    // Métodos
+    public function activar()
+    {
+        $this->update(['est' => 'act']);
+    }
+
+    public function desactivar()
+    {
+        $this->update(['est' => 'ina']);
+    }
+
     public function tienePermiso($permiso)
     {
-        return $this->permisos()
-            ->where('permiso_id', $permiso)
-            ->wherePivot('otorgado', true)
-            ->exists();
+        $permisos = $this->per ?? [];
+        return in_array($permiso, $permisos);
     }
 
-    public function asignarPermiso($permiso, $otorgado = true, $asignadoPor = null)
+    public function agregarPermiso($permiso)
     {
-        $this->permisos()->syncWithoutDetaching([
-            $permiso => [
-                'otorgado' => $otorgado,
-                'asignado_en' => now(),
-                'asignado_por' => $asignadoPor,
-            ],
-        ]);
+        $permisos = $this->per ?? [];
+        if (!in_array($permiso, $permisos)) {
+            $permisos[] = $permiso;
+            $this->update(['per' => $permisos]);
+        }
     }
 
-    public function revocarPermiso($permiso)
+    public function quitarPermiso($permiso)
     {
-        $this->permisos()->detach($permiso);
+        $permisos = $this->per ?? [];
+        $permisos = array_filter($permisos, function($p) use ($permiso) {
+            return $p !== $permiso;
+        });
+        $this->update(['per' => array_values($permisos)]);
     }
 
-    public function obtenerPermisosActivos()
+    // Validaciones
+    public static function reglas($id = null)
     {
-        return $this->permisos()
-            ->wherePivot('otorgado', true)
-            ->activos()
-            ->get();
+        $uniqueNombre = 'unique:roles,nom';
+        if ($id) {
+            $uniqueNombre .= ','.$id.',id';
+        }
+
+        return [
+            'nom' => 'required|string|max:100|'.$uniqueNombre,
+            'des' => 'nullable|string|max:255',
+            'est' => 'sometimes|in:act,ina',
+            'per' => 'nullable|array',
+        ];
     }
 
-    public static function obtenerRolesPorNivel($nivel)
+    public static function mensajes()
     {
-        return self::activos()
-            ->porNivelAcceso($nivel)
-            ->orderBy('nombre')
-            ->get();
+        return [
+            'nom.required' => 'El nombre del rol es obligatorio.',
+            'nom.max' => 'El nombre del rol no puede exceder 100 caracteres.',
+            'nom.unique' => 'Este nombre de rol ya existe.',
+            'des.max' => 'La descripción no puede exceder 255 caracteres.',
+            'est.in' => 'El estado debe ser activo o inactivo.',
+            'per.array' => 'Los permisos deben ser un arreglo.',
+        ];
     }
-
-    public static function crearRol($datos)
-    {
-        return self::create([
-            'nombre' => $datos['nombre'],
-            'slug' => $datos['slug'],
-            'descripcion' => $datos['descripcion'] ?? null,
-            'tipo' => $datos['tipo'] ?? 'Personalizado',
-            'activo' => $datos['activo'] ?? true,
-            'editable' => $datos['editable'] ?? true,
-            'nivel_acceso' => $datos['nivel_acceso'] ?? 1,
-            'es_activo' => $datos['es_activo'] ?? true,
-            'es_sistema' => $datos['es_sistema'] ?? false,
-            'permisos_especiales' => $datos['permisos_especiales'] ?? null,
-        ]);
-    }
-
-    // Constantes para niveles de acceso
-    const NIVEL_CLIENTE = 1;
-
-    const NIVEL_OPERADOR = 2;
-
-    const NIVEL_ADMINISTRADOR = 3;
-
-    const NIVEL_SUPER_ADMIN = 4;
 }

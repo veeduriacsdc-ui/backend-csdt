@@ -4,281 +4,170 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Configuracion extends Model
 {
     use HasFactory;
 
     protected $table = 'configuraciones';
-
+    
     protected $fillable = [
-        'clave', 'nombre', 'descripcion', 'valor', 'tipo_valor', 'categoria',
-        'subcategoria', 'es_publica', 'requiere_restart', 'opciones_validas',
-        'valor_default', 'expresion_regular', 'usuario_modifico_type',
-        'usuario_modifico_id', 'esta_activa', 'fecha_ultima_modificacion',
+        'cla', 'val', 'des', 'cat', 'tip', 'est'
     ];
-
-    protected $casts = [
-        'es_publica' => 'boolean',
-        'requiere_restart' => 'boolean',
-        'esta_activa' => 'boolean',
-        'opciones_validas' => 'array',
-        'fecha_ultima_modificacion' => 'datetime',
-    ];
-
-    // Relaciones
-    public function usuario_modifico(): MorphTo
-    {
-        return $this->morphTo('usuario_modifico', 'usuario_modifico_type', 'usuario_modifico_id');
-    }
 
     // Scopes
     public function scopeActivas($query)
     {
-        return $query->where('esta_activa', true);
+        return $query->where('est', 'act');
     }
 
-    public function scopePublicas($query)
+    public function scopePorCategoria($query, $categoria)
     {
-        return $query->where('es_publica', true);
+        return $query->where('cat', $categoria);
     }
 
-    public function scopePorCategoria($query, string $categoria)
+    public function scopePorTipo($query, $tipo)
     {
-        return $query->where('categoria', $categoria);
-    }
-
-    public function scopePorSubcategoria($query, string $subcategoria)
-    {
-        return $query->where('subcategoria', $subcategoria);
-    }
-
-    public function scopeQueRequierenRestart($query)
-    {
-        return $query->where('requiere_restart', true);
-    }
-
-    public function scopeRecientes($query, int $dias = 30)
-    {
-        return $query->where('fecha_ultima_modificacion', '>=', now()->subDays($dias));
-    }
-
-    // Accessors
-    public function getValorFormateadoAttribute()
-    {
-        switch ($this->tipo_valor) {
-            case 'boolean':
-                return $this->valor ? 'Sí' : 'No';
-            case 'json':
-            case 'array':
-                return json_decode($this->valor, true);
-            case 'integer':
-                return (int) $this->valor;
-            case 'float':
-                return (float) $this->valor;
-            default:
-                return $this->valor;
-        }
-    }
-
-    public function getCategoriaFormateadaAttribute(): string
-    {
-        $categorias = [
-            'general' => 'General',
-            'seguridad' => 'Seguridad',
-            'rendimiento' => 'Rendimiento',
-            'notificaciones' => 'Notificaciones',
-            'archivos' => 'Archivos',
-            'reportes' => 'Reportes',
-            'api' => 'API',
-            'sistema' => 'Sistema',
-        ];
-
-        return $categorias[$this->categoria] ?? ucfirst($this->categoria);
-    }
-
-    public function getTipoValorFormateadoAttribute(): string
-    {
-        $tipos = [
-            'string' => 'Texto',
-            'integer' => 'Número Entero',
-            'float' => 'Número Decimal',
-            'boolean' => 'Verdadero/Falso',
-            'json' => 'JSON',
-            'array' => 'Arreglo',
-            'file' => 'Archivo',
-        ];
-
-        return $tipos[$this->tipo_valor] ?? ucfirst($this->tipo_valor);
-    }
-
-    public function getPuedeModificarAttribute(): bool
-    {
-        return $this->esta_activa;
+        return $query->where('tip', $tipo);
     }
 
     // Métodos de negocio
-    public function actualizarValor($nuevoValor, $usuarioId = null, $usuarioType = null)
+    public function getEstadoColorAttribute()
     {
-        $valorAnterior = $this->valor;
+        return match ($this->est) {
+            'act' => 'success',
+            'ina' => 'danger',
+            default => 'secondary'
+        };
+    }
 
-        $this->update([
-            'valor' => $nuevoValor,
-            'usuario_modifico_id' => $usuarioId,
-            'usuario_modifico_type' => $usuarioType,
-            'fecha_ultima_modificacion' => now(),
-        ]);
+    public function getEstadoTextoAttribute()
+    {
+        return match ($this->est) {
+            'act' => 'Activo',
+            'ina' => 'Inactivo',
+            default => 'Desconocido'
+        };
+    }
 
-        // Crear log de auditoría
-        if ($usuarioId && $usuarioType) {
-            LogAuditoria::crear([
-                'usuario_id' => $usuarioId,
-                'usuario_type' => $usuarioType,
-                'accion' => 'actualizar_configuracion',
-                'entidad' => 'configuracion',
-                'entidad_id' => $this->id,
-                'datos_anteriores' => ['valor' => $valorAnterior],
-                'datos_nuevos' => ['valor' => $nuevoValor],
-                'categoria_accion' => 'configuracion',
-            ]);
-        }
-
-        return true;
+    public function getTipoTextoAttribute()
+    {
+        return match ($this->tip) {
+            'str' => 'Texto',
+            'int' => 'Número Entero',
+            'bool' => 'Verdadero/Falso',
+            'json' => 'JSON',
+            'dec' => 'Número Decimal',
+            default => 'Desconocido'
+        };
     }
 
     public function activar()
     {
-        return $this->update(['esta_activa' => true]);
+        $this->update(['est' => 'act']);
     }
 
     public function desactivar()
     {
-        return $this->update(['esta_activa' => false]);
+        $this->update(['est' => 'ina']);
     }
 
-    public function validarValor($valor): bool
+    public function getValorFormateadoAttribute()
     {
-        // Validar según el tipo
-        switch ($this->tipo_valor) {
-            case 'boolean':
-                return in_array(strtolower($valor), ['true', 'false', '1', '0', 'si', 'no']);
-            case 'integer':
-                return is_numeric($valor) && intval($valor) == $valor;
-            case 'float':
-                return is_numeric($valor);
+        switch ($this->tip) {
+            case 'bool':
+                return filter_var($this->val, FILTER_VALIDATE_BOOLEAN);
+            case 'int':
+                return (int) $this->val;
+            case 'dec':
+                return (float) $this->val;
             case 'json':
-            case 'array':
-                json_decode($valor);
-                return json_last_error() === JSON_ERROR_NONE;
+                return json_decode($this->val, true);
+            default:
+                return $this->val;
         }
-
-        // Validar expresión regular si existe
-        if ($this->expresion_regular) {
-            return preg_match($this->expresion_regular, $valor);
-        }
-
-        // Validar opciones válidas si existen
-        if ($this->opciones_validas) {
-            return in_array($valor, $this->opciones_validas);
-        }
-
-        return true;
     }
 
-    // Métodos estáticos
-    public static function obtenerValor(string $clave, $valorPorDefecto = null)
+    public function setValorFormateado($valor)
     {
-        $configuracion = static::where('clave', $clave)->where('esta_activa', true)->first();
+        switch ($this->tip) {
+            case 'bool':
+                $this->val = $valor ? '1' : '0';
+                break;
+            case 'int':
+                $this->val = (string) (int) $valor;
+                break;
+            case 'dec':
+                $this->val = (string) (float) $valor;
+                break;
+            case 'json':
+                $this->val = json_encode($valor);
+                break;
+            default:
+                $this->val = (string) $valor;
+        }
+        $this->save();
+    }
 
-        if (!$configuracion) {
+    // Métodos estáticos para obtener configuraciones
+    public static function obtener($clave, $valorPorDefecto = null)
+    {
+        $config = static::where('cla', $clave)->where('est', 'act')->first();
+        
+        if (!$config) {
             return $valorPorDefecto;
         }
-
-        return $configuracion->valor_formateado;
+        
+        return $config->valor_formateado;
     }
 
-    public static function establecerValor(string $clave, $valor, $usuarioId = null, $usuarioType = null)
+    public static function establecer($clave, $valor, $descripcion = null, $categoria = null, $tipo = 'str')
     {
-        $configuracion = static::where('clave', $clave)->first();
-
-        if (!$configuracion) {
-            return false;
+        $config = static::where('cla', $clave)->first();
+        
+        if (!$config) {
+            $config = new static();
+            $config->cla = $clave;
+            $config->des = $descripcion;
+            $config->cat = $categoria;
+            $config->tip = $tipo;
+            $config->est = 'act';
         }
-
-        if (!$configuracion->validarValor($valor)) {
-            return false;
-        }
-
-        return $configuracion->actualizarValor($valor, $usuarioId, $usuarioType);
-    }
-
-    public static function crearConfiguracion(array $datos)
-    {
-        $configuracion = static::create($datos);
-
-        // Crear log de auditoría
-        if (isset($datos['usuario_modifico_id']) && isset($datos['usuario_modifico_type'])) {
-            LogAuditoria::crear([
-                'usuario_id' => $datos['usuario_modifico_id'],
-                'usuario_type' => $datos['usuario_modifico_type'],
-                'accion' => 'crear_configuracion',
-                'entidad' => 'configuracion',
-                'entidad_id' => $configuracion->id,
-                'datos_nuevos' => $datos,
-                'categoria_accion' => 'configuracion',
-            ]);
-        }
-
-        return $configuracion;
+        
+        $config->setValorFormateado($valor);
+        return $config;
     }
 
     // Validaciones
-    public static function rules($id = null): array
+    public static function reglas($id = null)
     {
-        $rules = [
-            'clave' => 'required|string|unique:configuraciones,clave,' . $id,
-            'nombre' => 'required|string|max:200',
-            'descripcion' => 'nullable|string|max:1000',
-            'tipo_valor' => 'required|in:string,integer,float,boolean,json,array,file',
-            'categoria' => 'required|string|max:100',
-            'subcategoria' => 'nullable|string|max:100',
-            'es_publica' => 'boolean',
-            'requiere_restart' => 'boolean',
-            'opciones_validas' => 'nullable|array',
-            'expresion_regular' => 'nullable|string|max:500',
-            'esta_activa' => 'boolean',
-        ];
-
-        // Agregar validación del valor si existe
-        if (isset($rules['tipo_valor'])) {
-            $rules['valor'] = 'nullable';
+        $uniqueClave = 'unique:configuraciones,cla';
+        if ($id) {
+            $uniqueClave .= ','.$id.',id';
         }
 
-        return $rules;
+        return [
+            'cla' => 'required|string|max:100|'.$uniqueClave,
+            'val' => 'required|string',
+            'des' => 'nullable|string|max:255',
+            'cat' => 'nullable|string|max:100',
+            'tip' => 'required|in:str,int,bool,json,dec',
+            'est' => 'sometimes|in:act,ina',
+        ];
     }
 
-    // Eventos del modelo
-    protected static function boot()
+    public static function mensajes()
     {
-        parent::boot();
-
-        static::creating(function ($configuracion) {
-            if (empty($configuracion->esta_activa)) {
-                $configuracion->esta_activa = true;
-            }
-
-            if (empty($configuracion->es_publica)) {
-                $configuracion->es_publica = false;
-            }
-
-            if (empty($configuracion->requiere_restart)) {
-                $configuracion->requiere_restart = false;
-            }
-
-            if (empty($configuracion->fecha_ultima_modificacion)) {
-                $configuracion->fecha_ultima_modificacion = now();
-            }
-        });
+        return [
+            'cla.required' => 'La clave es obligatoria.',
+            'cla.max' => 'La clave no puede exceder 100 caracteres.',
+            'cla.unique' => 'Esta clave ya existe.',
+            'val.required' => 'El valor es obligatorio.',
+            'des.max' => 'La descripción no puede exceder 255 caracteres.',
+            'cat.max' => 'La categoría no puede exceder 100 caracteres.',
+            'tip.required' => 'El tipo es obligatorio.',
+            'tip.in' => 'El tipo debe ser válido.',
+            'est.in' => 'El estado debe ser activo o inactivo.',
+        ];
     }
 }
