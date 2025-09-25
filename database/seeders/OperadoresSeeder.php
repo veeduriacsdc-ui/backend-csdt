@@ -40,7 +40,7 @@ class OperadoresSeeder extends Seeder
                 'apellidos' => 'Administrador',
                 'usuario' => 'admin',
                 'correo' => 'esteban.41m@gmail.com',
-                'contrasena' => Hash::make('123456'),
+                'contrasena' => Hash::make('password123'),
                 'telefono' => '+57 300 123 4567',
                 'direccion' => 'Dirección del Administrador',
                 'ciudad' => 'Bogotá',
@@ -147,7 +147,7 @@ class OperadoresSeeder extends Seeder
         }
 
         $this->command->info('📋 USUARIOS CREADOS:');
-        $this->command->info('Admin: esteban.41m@gmail.com / 123456');
+        $this->command->info('Admin: esteban.41m@gmail.com / password123');
         $this->command->info('Cliente: cliente@ejemplo.com / cliente123');
         $this->command->info('Operador: operador@ejemplo.com / operador123');
         $this->command->info('Administrador: admin@ejemplo.com / admin123');

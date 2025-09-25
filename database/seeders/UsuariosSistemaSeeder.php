@@ -38,7 +38,7 @@ class UsuariosSistemaSeeder extends Seeder
             [
                 'Nombre' => 'Esteban Administrador',
                 'Correo' => 'esteban.41m@gmail.com',
-                'Contrasena' => Hash::make('123456'),
+                'Contrasena' => Hash::make('password123'),
                 'CorreoVerificadoEn' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -87,7 +87,7 @@ class UsuariosSistemaSeeder extends Seeder
         }
 
         $this->command->info('📋 USUARIOS DEL SISTEMA CREADOS:');
-        $this->command->info('Admin: esteban.41m@gmail.com / 123456');
+        $this->command->info('Admin: esteban.41m@gmail.com / password123');
         $this->command->info('Cliente: cliente@ejemplo.com / cliente123');
         $this->command->info('Operador: operador@ejemplo.com / operador123');
         $this->command->info('Administrador: admin@ejemplo.com / admin123');
