@@ -89,7 +89,7 @@ class AuthController extends Controller
             }
 
             $datos = $request->all();
-            $datos['con'] = Hash::make($datos['con']);
+            // No hashear aquí, el mutator del modelo lo hace automáticamente
             $datos['est'] = 'pen'; // Pendiente de verificación
 
             $usuario = Usuario::create($datos);
@@ -188,7 +188,7 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            $usuario->update(['con' => Hash::make($request->con_nueva)]);
+            $usuario->update(['con' => $request->con_nueva]); // El mutator hashea automáticamente
 
             // Log de cambio de contraseña
             Log::crear('cambiar_contrasena', 'usuarios', $usuario->id, 'Usuario cambió su contraseña');
@@ -270,7 +270,7 @@ class AuthController extends Controller
             // Aquí se validaría el token de recuperación
             // Por ahora solo actualizamos la contraseña
 
-            $usuario->update(['con' => Hash::make($request->con_nueva)]);
+            $usuario->update(['con' => $request->con_nueva]); // El mutator hashea automáticamente
 
             // Log de reseteo de contraseña
             Log::crear('resetear_contrasena', 'usuarios', $usuario->id, 'Usuario reseteó su contraseña');

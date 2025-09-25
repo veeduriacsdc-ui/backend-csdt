@@ -36,7 +36,7 @@ return new class extends Migration
             $table->index(['fecha_aprobacion'], 'idx_reg_pend_fecha_aprob');
 
             // Clave foránea
-            $table->foreign('aprobado_por')->references('IdUsuario')->on('usuariossistema')->onDelete('set null');
+            $table->foreign('aprobado_por')->references('id')->on('usuarios')->onDelete('set null');
         });
     }
 
