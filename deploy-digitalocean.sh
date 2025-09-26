@@ -6,7 +6,7 @@
 echo "🚀 Iniciando despliegue en DigitalOcean..."
 
 # Configuración del servidor
-SERVER_IP="tu_ip_del_servidor"
+SERVER_IP="134.209.221.193"
 SERVER_USER="root"
 APP_NAME="csdt"
 APP_PATH="/var/www/$APP_NAME"
