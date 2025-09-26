@@ -450,4 +450,70 @@ class UsuarioController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Obtener usuarios activos
+     */
+    public function usuariosActivos(Request $request): JsonResponse
+    {
+        try {
+            $query = Usuario::with(['roles'])
+                ->where('est', 'act');
+
+            // Filtros adicionales
+            if ($request->has('rol')) {
+                $query->where('rol', $request->rol);
+            }
+
+            if ($request->has('buscar')) {
+                $buscar = $request->buscar;
+                $query->where(function($q) use ($buscar) {
+                    $q->where('nom', 'like', "%{$buscar}%")
+                      ->orWhere('ape', 'like', "%{$buscar}%")
+                      ->orWhere('cor', 'like', "%{$buscar}%")
+                      ->orWhere('doc', 'like', "%{$buscar}%");
+                });
+            }
+
+            // Ordenamiento
+            $orden = $request->get('orden', 'created_at');
+            $direccion = $request->get('direccion', 'desc');
+            $query->orderBy($orden, $direccion);
+
+            // Paginación
+            $porPagina = $request->get('por_pagina', 15);
+            $usuarios = $query->paginate($porPagina);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'usuarios' => $usuarios->items(),
+                    'pagination' => [
+                        'current_page' => $usuarios->currentPage(),
+                        'per_page' => $usuarios->perPage(),
+                        'total' => $usuarios->total(),
+                        'last_page' => $usuarios->lastPage(),
+                        'from' => $usuarios->firstItem(),
+                        'to' => $usuarios->lastItem()
+                    ],
+                    'estadisticas' => [
+                        'total_activos' => $usuarios->total(),
+                        'por_rol' => Usuario::where('est', 'act')
+                            ->selectRaw('rol, COUNT(*) as total')
+                            ->groupBy('rol')
+                            ->get()
+                    ]
+                ],
+                'message' => 'Usuarios activos obtenidos exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener usuarios activos: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener usuarios activos',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

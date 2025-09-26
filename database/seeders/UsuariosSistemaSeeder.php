@@ -17,7 +17,7 @@ class UsuariosSistemaSeeder extends Seeder
             $this->command->info('🚀 Creando usuarios del sistema...');
 
             // Verificar si ya existen usuarios del sistema
-            $existentes = DB::table('UsuariosSistema')->count();
+            $existentes = DB::table('usu')->where('rol', 'adm')->count();
             if ($existentes > 0) {
                 $this->command->info('⚠️ Ya existen usuarios del sistema en la base de datos.');
                 return;
@@ -34,57 +34,9 @@ class UsuariosSistemaSeeder extends Seeder
 
     private function crearUsuariosSistema()
     {
-        $usuarios = [
-            [
-                'Nombre' => 'Esteban Administrador',
-                'Correo' => 'esteban.41m@gmail.com',
-                'Contrasena' => Hash::make('password123'),
-                'CorreoVerificadoEn' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'Nombre' => 'Usuario Cliente',
-                'Correo' => 'cliente@ejemplo.com',
-                'Contrasena' => Hash::make('cliente123'),
-                'CorreoVerificadoEn' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'Nombre' => 'Usuario Operador',
-                'Correo' => 'operador@ejemplo.com',
-                'Contrasena' => Hash::make('operador123'),
-                'CorreoVerificadoEn' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'Nombre' => 'Usuario Administrador',
-                'Correo' => 'admin@ejemplo.com',
-                'Contrasena' => Hash::make('admin123'),
-                'CorreoVerificadoEn' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'Nombre' => 'Usuario Super Admin',
-                'Correo' => 'superadmin@ejemplo.com',
-                'Contrasena' => Hash::make('superadmin123'),
-                'CorreoVerificadoEn' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ];
-
-        foreach ($usuarios as $usuario) {
-            try {
-                $id = DB::table('UsuariosSistema')->insertGetId($usuario);
-                $this->command->info("✅ Usuario del sistema creado: {$usuario['Correo']}");
-            } catch (\Exception $e) {
-                $this->command->error("❌ Error creando usuario {$usuario['Correo']}: " . $e->getMessage());
-            }
-        }
+        // Este seeder ya no es necesario ya que OperadoresSeeder crea todos los usuarios
+        $this->command->info('ℹ️ Los usuarios del sistema ya fueron creados por OperadoresSeeder.');
+        return;
 
         $this->command->info('📋 USUARIOS DEL SISTEMA CREADOS:');
         $this->command->info('Admin: esteban.41m@gmail.com / password123');

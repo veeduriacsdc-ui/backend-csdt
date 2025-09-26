@@ -8,6 +8,7 @@ use App\Http\Middleware\MonitorRendimiento;
 use App\Http\Middleware\RateLimitingAvanzado;
 use App\Http\Middleware\SanitizarInputs;
 use App\Http\Middleware\VerificarRol;
+use App\Http\Middleware\VerificarPermiso;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Registrar middleware personalizado
         $middleware->alias([
             'verificar.rol' => VerificarRol::class,
+            'verificar.permiso' => VerificarPermiso::class,
             'monitor.rendimiento' => MonitorRendimiento::class,
             'csp' => ContentSecurityPolicy::class,
             'sanitizar.inputs' => SanitizarInputs::class,

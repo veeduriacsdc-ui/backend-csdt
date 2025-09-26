@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Archivo;
-use App\Models\Log;
+use App\Models\Usuario;
+use App\Models\Veeduria;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class ArchivoController extends Controller
 {
@@ -18,46 +20,28 @@ class ArchivoController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Archivo::with(['usuario', 'veeduria', 'tarea']);
+            $query = Archivo::with(['usuario', 'veeduria']);
 
             // Filtros
-            if ($request->has('est')) {
-                $query->where('est', $request->est);
-            }
-            if ($request->has('tip')) {
-                $query->where('tip', $request->tip);
-            }
             if ($request->has('usu_id')) {
                 $query->where('usu_id', $request->usu_id);
             }
             if ($request->has('vee_id')) {
                 $query->where('vee_id', $request->vee_id);
             }
-            if ($request->has('tar_id')) {
-                $query->where('tar_id', $request->tar_id);
+            if ($request->has('tip')) {
+                $query->where('tip', $request->tip);
             }
-
-            // Filtros especiales
-            if ($request->has('imagenes')) {
-                $query->imagenes();
-            }
-            if ($request->has('documentos')) {
-                $query->documentos();
-            }
-            if ($request->has('videos')) {
-                $query->videos();
-            }
-            if ($request->has('audios')) {
-                $query->audios();
+            if ($request->has('est')) {
+                $query->where('est', $request->est);
             }
 
             // Búsqueda
             if ($request->has('buscar')) {
                 $buscar = $request->buscar;
                 $query->where(function($q) use ($buscar) {
-                    $q->where('nom', 'like', '%' . $buscar . '%')
-                      ->orWhere('nom_ori', 'like', '%' . $buscar . '%')
-                      ->orWhere('des', 'like', '%' . $buscar . '%');
+                    $q->where('nom', 'like', "%{$buscar}%")
+                      ->orWhere('des', 'like', "%{$buscar}%");
                 });
             }
 
@@ -72,263 +56,25 @@ class ArchivoController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $archivos,
+                'data' => [
+                    'archivos' => $archivos->items(),
+                    'pagination' => [
+                        'current_page' => $archivos->currentPage(),
+                        'per_page' => $archivos->perPage(),
+                        'total' => $archivos->total(),
+                        'last_page' => $archivos->lastPage(),
+                        'from' => $archivos->firstItem(),
+                        'to' => $archivos->lastItem()
+                    ]
+                ],
                 'message' => 'Archivos obtenidos exitosamente'
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al obtener archivos: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener archivos: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Obtener archivo por ID
-     */
-    public function show($id): JsonResponse
-    {
-        try {
-            $archivo = Archivo::with(['usuario', 'veeduria', 'tarea'])->find($id);
-
-            if (!$archivo) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Archivo no encontrado'
-                ], 404);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $archivo,
-                'message' => 'Archivo obtenido exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener archivo: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Subir archivo
-     */
-    public function store(Request $request): JsonResponse
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'archivo' => 'required|file|max:10240', // 10MB máximo
-                'usu_id' => 'required|exists:usuarios,id',
-                'vee_id' => 'nullable|exists:veedurias,id',
-                'tar_id' => 'nullable|exists:tareas,id',
-                'des' => 'nullable|string',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Errores de validación',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $archivo = $request->file('archivo');
-            $nombreOriginal = $archivo->getClientOriginalName();
-            $extension = $archivo->getClientOriginalExtension();
-            $tamaño = $archivo->getSize();
-            
-            // Generar nombre único
-            $nombreUnico = time() . '_' . uniqid() . '.' . $extension;
-            
-            // Subir archivo
-            $ruta = $archivo->storeAs('archivos', $nombreUnico, 'public');
-
-            // Crear registro en base de datos
-            $archivoModel = Archivo::create([
-                'usu_id' => $request->usu_id,
-                'vee_id' => $request->vee_id,
-                'tar_id' => $request->tar_id,
-                'nom' => $nombreUnico,
-                'nom_ori' => $nombreOriginal,
-                'ruta' => $ruta,
-                'tip' => $extension,
-                'tam' => $tamaño,
-                'des' => $request->des,
-                'est' => 'act'
-            ]);
-
-            // Log de subida
-            Log::crear('subir_archivo', 'archivos', $archivoModel->id, 'Archivo subido: ' . $nombreOriginal);
-
-            return response()->json([
-                'success' => true,
-                'data' => $archivoModel,
-                'message' => 'Archivo subido exitosamente'
-            ], 201);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al subir archivo: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Actualizar archivo
-     */
-    public function update(Request $request, $id): JsonResponse
-    {
-        try {
-            $archivo = Archivo::find($id);
-
-            if (!$archivo) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Archivo no encontrado'
-                ], 404);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'des' => 'nullable|string',
-                'est' => 'sometimes|in:act,eli,err',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Errores de validación',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $datosAnteriores = $archivo->toArray();
-            $archivo->update($request->all());
-
-            // Log de actualización
-            Log::logActualizacion('archivos', $archivo->id, $datosAnteriores, $archivo->toArray());
-
-            return response()->json([
-                'success' => true,
-                'data' => $archivo,
-                'message' => 'Archivo actualizado exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar archivo: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Eliminar archivo (soft delete)
-     */
-    public function destroy($id): JsonResponse
-    {
-        try {
-            $archivo = Archivo::find($id);
-
-            if (!$archivo) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Archivo no encontrado'
-                ], 404);
-            }
-
-            $datosAnteriores = $archivo->toArray();
-            
-            // Marcar como eliminado en base de datos
-            $archivo->marcarComoEliminado();
-
-            // Log de eliminación
-            Log::crear('eliminar_archivo', 'archivos', $archivo->id, 'Archivo eliminado: ' . $archivo->nom_ori);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Archivo eliminado exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar archivo: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Restaurar archivo
-     */
-    public function restore($id): JsonResponse
-    {
-        try {
-            $archivo = Archivo::withTrashed()->find($id);
-
-            if (!$archivo) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Archivo no encontrado'
-                ], 404);
-            }
-
-            $archivo->restaurar();
-
-            // Log de restauración
-            Log::logRestauracion('archivos', $archivo->id);
-
-            return response()->json([
-                'success' => true,
-                'data' => $archivo,
-                'message' => 'Archivo restaurado exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al restaurar archivo: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Descargar archivo
-     */
-    public function descargar($id): JsonResponse
-    {
-        try {
-            $archivo = Archivo::find($id);
-
-            if (!$archivo) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Archivo no encontrado'
-                ], 404);
-            }
-
-            if (!Storage::disk('public')->exists($archivo->ruta)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Archivo no encontrado en el servidor'
-                ], 404);
-            }
-
-            // Log de descarga
-            Log::crear('descargar_archivo', 'archivos', $archivo->id, 'Archivo descargado: ' . $archivo->nom_ori);
-
-            return response()->download(
-                storage_path('app/public/' . $archivo->ruta),
-                $archivo->nom_ori
-            );
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al descargar archivo: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -341,83 +87,233 @@ class ArchivoController extends Controller
         try {
             $query = Archivo::query();
 
-            // Filtros por usuario
-            if ($request->has('usu_id')) {
-                $query->where('usu_id', $request->usu_id);
-            }
-
-            // Filtros por veeduría
-            if ($request->has('vee_id')) {
-                $query->where('vee_id', $request->vee_id);
-            }
-
-            // Filtros por tarea
-            if ($request->has('tar_id')) {
-                $query->where('tar_id', $request->tar_id);
+            // Filtros por fecha
+            if ($request->has('fec_ini') && $request->has('fec_fin')) {
+                $query->whereBetween('created_at', [$request->fec_ini, $request->fec_fin]);
             }
 
             $estadisticas = [
-                'total_archivos' => $query->count(),
-                'archivos_activos' => $query->where('est', 'act')->count(),
-                'archivos_eliminados' => $query->where('est', 'eli')->count(),
-                'archivos_con_error' => $query->where('est', 'err')->count(),
-                'tamaño_total' => $query->where('est', 'act')->sum('tam'),
-                'tamaño_promedio' => $query->where('est', 'act')->avg('tam'),
-                'por_tipo' => $query->selectRaw('tip, COUNT(*) as total')
+                'total_archivos' => Archivo::count(),
+                'archivos_activos' => Archivo::where('est', 'act')->count(),
+                'archivos_inactivos' => Archivo::where('est', 'ina')->count(),
+                'archivos_suspendidos' => Archivo::where('est', 'sus')->count(),
+                'tamaño_total' => Archivo::where('est', 'act')->sum('tam'),
+                'tamaño_promedio' => Archivo::where('est', 'act')->avg('tam'),
+                'tamaño_maximo' => Archivo::where('est', 'act')->max('tam'),
+                'tamaño_minimo' => Archivo::where('est', 'act')->min('tam'),
+                'por_tipo' => Archivo::selectRaw('tip, COUNT(*) as total, SUM(tam) as tamaño_total')
                     ->groupBy('tip')
                     ->get(),
-                'por_estado' => $query->selectRaw('est, COUNT(*) as total')
+                'por_estado' => Archivo::selectRaw('est, COUNT(*) as total')
                     ->groupBy('est')
                     ->get(),
-                'imagenes' => $query->imagenes()->count(),
-                'documentos' => $query->documentos()->count(),
-                'videos' => $query->videos()->count(),
-                'audios' => $query->audios()->count(),
+                'por_usuario' => Archivo::with('usuario')
+                    ->selectRaw('usu_id, COUNT(*) as total, SUM(tam) as tamaño_total')
+                    ->groupBy('usu_id')
+                    ->orderBy('total', 'desc')
+                    ->limit(10)
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'usuario_id' => $item->usu_id,
+                            'usuario_nombre' => $item->usuario ? $item->usuario->nom . ' ' . $item->usuario->ape : 'Usuario no encontrado',
+                            'total_archivos' => $item->total,
+                            'tamaño_total' => $item->tamaño_total
+                        ];
+                    }),
+                'por_veeduria' => Archivo::with('veeduria')
+                    ->selectRaw('vee_id, COUNT(*) as total, SUM(tam) as tamaño_total')
+                    ->whereNotNull('vee_id')
+                    ->groupBy('vee_id')
+                    ->orderBy('total', 'desc')
+                    ->limit(10)
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'veeduria_id' => $item->vee_id,
+                            'veeduria_titulo' => $item->veeduria ? $item->veeduria->tit : 'Veeduría no encontrada',
+                            'total_archivos' => $item->total,
+                            'tamaño_total' => $item->tamaño_total
+                        ];
+                    }),
+                'por_mes' => Archivo::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes, COUNT(*) as total, SUM(tam) as tamaño')
+                    ->groupBy('mes')
+                    ->orderBy('mes', 'desc')
+                    ->limit(12)
+                    ->get(),
+                'tipos_mas_comunes' => Archivo::selectRaw('tip, COUNT(*) as total')
+                    ->groupBy('tip')
+                    ->orderBy('total', 'desc')
+                    ->limit(10)
+                    ->get(),
+                'estadisticas_generales' => [
+                    'archivos_hoy' => Archivo::whereDate('created_at', today())->count(),
+                    'archivos_esta_semana' => Archivo::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                    'archivos_este_mes' => Archivo::whereMonth('created_at', now()->month)->count(),
+                    'archivos_este_ano' => Archivo::whereYear('created_at', now()->year)->count()
+                ],
+                'distribucion_por_tamaño' => [
+                    'pequenos' => Archivo::where('tam', '<', 1024 * 1024)->count(), // < 1MB
+                    'medianos' => Archivo::whereBetween('tam', [1024 * 1024, 10 * 1024 * 1024])->count(), // 1MB - 10MB
+                    'grandes' => Archivo::where('tam', '>', 10 * 1024 * 1024)->count() // > 10MB
+                ]
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $estadisticas,
-                'message' => 'Estadísticas obtenidas exitosamente'
+                'message' => 'Estadísticas de archivos obtenidas exitosamente'
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al obtener estadísticas de archivos: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+                'message' => 'Error al obtener estadísticas de archivos: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Buscar archivos
+     * Mostrar un archivo específico
      */
-    public function buscar(Request $request): JsonResponse
+    public function show($id): JsonResponse
     {
         try {
-            $query = Archivo::with(['usuario', 'veeduria', 'tarea']);
-
-            if ($request->has('termino')) {
-                $termino = $request->termino;
-                $query->where(function($q) use ($termino) {
-                    $q->where('nom', 'like', '%' . $termino . '%')
-                      ->orWhere('nom_ori', 'like', '%' . $termino . '%')
-                      ->orWhere('des', 'like', '%' . $termino . '%');
-                });
-            }
-
-            $archivos = $query->limit(10)->get();
+            $archivo = Archivo::with(['usuario', 'veeduria'])->findOrFail($id);
 
             return response()->json([
                 'success' => true,
-                'data' => $archivos,
-                'message' => 'Búsqueda completada exitosamente'
+                'data' => $archivo,
+                'message' => 'Archivo obtenido exitosamente'
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al obtener archivo: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error en la búsqueda: ' . $e->getMessage()
+                'message' => 'Error al obtener archivo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Crear un nuevo archivo
+     */
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'nom' => 'required|string|max:255',
+                'tip' => 'required|string|max:50',
+                'tam' => 'required|integer|min:1',
+                'ruta' => 'required|string|max:500',
+                'usu_id' => 'required|integer|exists:usu,id',
+                'vee_id' => 'nullable|integer|exists:vee,id',
+                'des' => 'nullable|string',
+                'mime_type' => 'nullable|string|max:100'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Datos de validación incorrectos',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $archivo = Archivo::create([
+                'nom' => $request->nom,
+                'tip' => $request->tip,
+                'tam' => $request->tam,
+                'ruta' => $request->ruta,
+                'usu_id' => $request->usu_id,
+                'vee_id' => $request->vee_id,
+                'des' => $request->des,
+                'mime_type' => $request->mime_type,
+                'hash_archivo' => hash_file('sha256', $request->ruta),
+                'est' => 'act'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $archivo,
+                'message' => 'Archivo creado exitosamente'
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Error al crear archivo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear archivo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Actualizar un archivo
+     */
+    public function update(Request $request, $id): JsonResponse
+    {
+        try {
+            $archivo = Archivo::findOrFail($id);
+
+            $validator = Validator::make($request->all(), [
+                'nom' => 'sometimes|string|max:255',
+                'des' => 'sometimes|string',
+                'est' => 'sometimes|in:act,ina,sus'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Datos de validación incorrectos',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $archivo->update($request->only(['nom', 'des', 'est']));
+
+            return response()->json([
+                'success' => true,
+                'data' => $archivo,
+                'message' => 'Archivo actualizado exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar archivo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar archivo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Eliminar un archivo
+     */
+    public function destroy($id): JsonResponse
+    {
+        try {
+            $archivo = Archivo::findOrFail($id);
+
+            // Eliminar archivo físico si existe
+            if (Storage::exists($archivo->ruta)) {
+                Storage::delete($archivo->ruta);
+            }
+
+            $archivo->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Archivo eliminado exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar archivo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar archivo: ' . $e->getMessage()
             ], 500);
         }
     }

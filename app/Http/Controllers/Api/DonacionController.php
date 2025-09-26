@@ -410,19 +410,45 @@ class DonacionController extends Controller
             }
 
             $estadisticas = [
-                'total_donaciones' => $query->count(),
-                'donaciones_confirmadas' => $query->where('est', 'con')->count(),
-                'donaciones_pendientes' => $query->where('est', 'pen')->count(),
-                'donaciones_rechazadas' => $query->where('est', 'rec')->count(),
-                'monto_total' => $query->where('est', 'con')->sum('mon'),
-                'monto_promedio' => $query->where('est', 'con')->avg('mon'),
-                'donaciones_anonimas' => $query->where('anon', true)->count(),
-                'por_metodo_pago' => $query->selectRaw('met_pag, COUNT(*) as total')
-                    ->groupBy('met_pag')
+                'total_donaciones' => Donacion::count(),
+                'donaciones_activas' => Donacion::where('est', 'act')->count(),
+                'donaciones_inactivas' => Donacion::where('est', 'ina')->count(),
+                'donaciones_suspendidas' => Donacion::where('est', 'sus')->count(),
+                'monto_total' => Donacion::where('est', 'act')->sum('mon'),
+                'monto_promedio' => Donacion::where('est', 'act')->avg('mon'),
+                'monto_maximo' => Donacion::where('est', 'act')->max('mon'),
+                'monto_minimo' => Donacion::where('est', 'act')->min('mon'),
+                'por_tipo' => Donacion::selectRaw('tip, COUNT(*) as total')
+                    ->groupBy('tip')
                     ->get(),
-                'por_tipo_donacion' => $query->selectRaw('tip_don, COUNT(*) as total')
-                    ->groupBy('tip_don')
+                'por_estado' => Donacion::selectRaw('est, COUNT(*) as total')
+                    ->groupBy('est')
                     ->get(),
+                'por_usuario' => Donacion::with('usuario')
+                    ->selectRaw('usu_id, COUNT(*) as total, SUM(mon) as monto_total')
+                    ->groupBy('usu_id')
+                    ->orderBy('total', 'desc')
+                    ->limit(10)
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'usuario_id' => $item->usu_id,
+                            'usuario_nombre' => $item->usuario ? $item->usuario->nom . ' ' . $item->usuario->ape : 'Usuario no encontrado',
+                            'total_donaciones' => $item->total,
+                            'monto_total' => $item->monto_total
+                        ];
+                    }),
+                'por_mes' => Donacion::selectRaw('DATE_FORMAT(fec_don, "%Y-%m") as mes, COUNT(*) as total, SUM(mon) as monto')
+                    ->groupBy('mes')
+                    ->orderBy('mes', 'desc')
+                    ->limit(12)
+                    ->get(),
+                'estadisticas_generales' => [
+                    'donaciones_hoy' => Donacion::whereDate('fec_don', today())->count(),
+                    'donaciones_esta_semana' => Donacion::whereBetween('fec_don', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                    'donaciones_este_mes' => Donacion::whereMonth('fec_don', now()->month)->count(),
+                    'donaciones_este_ano' => Donacion::whereYear('fec_don', now()->year)->count()
+                ]
             ];
 
             return response()->json([

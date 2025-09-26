@@ -10,10 +10,75 @@ use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RegistroControlador;
+use App\Http\Controllers\Api\PublicoController;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 // Incluir rutas específicas de módulos
 require_once __DIR__ . '/api-usuarios.php';
+require_once __DIR__ . '/api-administrador-general.php';
+
+// Rutas públicas (sin autenticación)
+Route::prefix('publico')->group(function () {
+    Route::get('tipos-veeduria', [PublicoController::class, 'tiposVeeduria']);
+    Route::get('estados-veeduria', [PublicoController::class, 'estadosVeeduria']);
+    Route::get('categorias-veeduria', [PublicoController::class, 'categoriasVeeduria']);
+    Route::get('tipos-documento', [PublicoController::class, 'tiposDocumento']);
+    Route::get('generos', [PublicoController::class, 'generos']);
+    Route::get('prioridades-tarea', [PublicoController::class, 'prioridadesTarea']);
+    Route::get('estados-tarea', [PublicoController::class, 'estadosTarea']);
+    Route::get('tipos-donacion', [PublicoController::class, 'tiposDonacion']);
+    Route::get('estados-donacion', [PublicoController::class, 'estadosDonacion']);
+});
+
+// Rutas de Dashboard
+Route::prefix('dashboard')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('general', [DashboardController::class, 'general']);
+    Route::get('administrador', [DashboardController::class, 'administrador']);
+    Route::get('operador', [DashboardController::class, 'operador']);
+    Route::get('cliente', [DashboardController::class, 'cliente']);
+});
+
+// Rutas del Sistema de IA
+Route::prefix('ia')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/estadisticas', [App\Http\Controllers\Api\SistemaIAControllerMejorado::class, 'estadisticasIA']);
+    Route::post('/recomendaciones', [App\Http\Controllers\Api\SistemaIAControllerMejorado::class, 'obtenerRecomendaciones']);
+    Route::post('/generar-narracion', [App\Http\Controllers\Api\SistemaIAControllerMejorado::class, 'generarNarracion']);
+    Route::post('/analizar-veeduria/{id}', [App\Http\Controllers\Api\SistemaIAControllerMejorado::class, 'analizarVeeduria']);
+});
+
+// Rutas de Logs
+Route::prefix('logs')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\LogController::class, 'index']);
+    Route::get('/recientes/{dias?}', [App\Http\Controllers\Api\LogController::class, 'recientes']);
+    Route::get('/estadisticas', [App\Http\Controllers\Api\LogController::class, 'estadisticas']);
+});
+
+// Rutas de Validación
+Route::prefix('validacion')->middleware(['auth:sanctum'])->group(function () {
+    Route::post('/permisos', [App\Http\Controllers\Api\ValidacionController::class, 'validarPermisos']);
+    Route::post('/rol', [App\Http\Controllers\Api\ValidacionController::class, 'validarRol']);
+    Route::get('/usuario/{id}/permisos', [App\Http\Controllers\Api\ValidacionController::class, 'obtenerPermisosUsuario']);
+});
+
+// Rutas de Archivos
+Route::prefix('archivos')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\ArchivoController::class, 'index']);
+    Route::get('/estadisticas', [App\Http\Controllers\Api\ArchivoController::class, 'estadisticas']);
+    Route::get('/{id}', [App\Http\Controllers\Api\ArchivoController::class, 'show']);
+    Route::post('/', [App\Http\Controllers\Api\ArchivoController::class, 'store']);
+    Route::put('/{id}', [App\Http\Controllers\Api\ArchivoController::class, 'update']);
+    Route::delete('/{id}', [App\Http\Controllers\Api\ArchivoController::class, 'destroy']);
+});
+
+// Rutas de Dashboard
+Route::prefix('dashboard')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\DashboardController::class, 'general']);
+    Route::get('/administrador-general', [App\Http\Controllers\Api\DashboardController::class, 'administradorGeneral']);
+    Route::get('/administrador', [App\Http\Controllers\Api\DashboardController::class, 'administrador']);
+    Route::get('/operador', [App\Http\Controllers\Api\DashboardController::class, 'operador']);
+    Route::get('/cliente', [App\Http\Controllers\Api\DashboardController::class, 'cliente']);
+});
 
 /*
 |--------------------------------------------------------------------------

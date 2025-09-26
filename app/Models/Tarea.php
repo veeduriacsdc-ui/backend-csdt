@@ -10,7 +10,7 @@ class Tarea extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'tareas';
+    protected $table = 'tar';
     
     protected $fillable = [
         'vee_id', 'asig_por', 'asig_a', 'tit', 'des', 'est', 'pri', 
@@ -214,16 +214,16 @@ class Tarea extends Model
     public static function reglas($id = null)
     {
         return [
-            'vee_id' => 'required|exists:veedurias,id',
-            'asig_por' => 'required|exists:usuarios,id',
-            'asig_a' => 'nullable|exists:usuarios,id',
+            'vee_id' => 'nullable|exists:vee,id',
+            'asig_por' => 'required|exists:usu,id',
+            'asig_a' => 'required|exists:usu,id',
             'tit' => 'required|string|max:200',
             'des' => 'required|string',
             'est' => 'sometimes|in:pen,pro,com,can,sus',
             'pri' => 'sometimes|in:baj,med,alt,urg',
             'fec_ini' => 'nullable|date|after_or_equal:today',
-            'fec_fin' => 'nullable|date|after_or_equal:fec_ini',
             'fec_ven' => 'nullable|date|after:today',
+            'fec_com' => 'nullable|date|after_or_equal:fec_ini',
             'not' => 'nullable|string',
         ];
     }

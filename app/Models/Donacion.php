@@ -10,19 +10,16 @@ class Donacion extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'donaciones';
+    protected $table = 'don';
     
     protected $fillable = [
-        'usu_id', 'vee_id', 'val_por', 'mon', 'moneda', 'met_pag', 'fec_don', 
-        'fec_val', 'est', 'not', 'anon', 'com_pag', 'tip_don', 'mot', 
-        'ref_pag', 'met_pag_det', 'cam', 'cod_pro'
+        'usu_id', 'mon', 'tip', 'est', 'ref', 'des', 'fec_don', 'fec_con', 'not'
     ];
 
     protected $casts = [
         'fec_don' => 'datetime',
-        'fec_val' => 'datetime',
-        'anon' => 'boolean',
-        'met_pag_det' => 'array',
+        'fec_con' => 'datetime',
+        'mon' => 'decimal:2',
     ];
 
     // Relaciones
@@ -167,19 +164,15 @@ class Donacion extends Model
     public static function reglas($id = null)
     {
         return [
-            'usu_id' => 'required|exists:usuarios,id',
-            'vee_id' => 'nullable|exists:veedurias,id',
-            'val_por' => 'nullable|exists:usuarios,id',
+            'usu_id' => 'required|exists:usu,id',
             'mon' => 'required|numeric|min:0.01',
-            'moneda' => 'required|in:cop,usd,eur',
-            'met_pag' => 'required|in:tar,tra,efe,bil,otr',
-            'est' => 'sometimes|in:pen,con,rec,pro,can',
-            'anon' => 'boolean',
-            'tip_don' => 'required|in:uni,rec,men,anu',
-            'mot' => 'nullable|string|max:300',
-            'ref_pag' => 'nullable|string|max:100',
-            'cam' => 'nullable|string|max:100',
-            'cod_pro' => 'nullable|string|max:50',
+            'tip' => 'required|in:efec,tran,tar,otr',
+            'est' => 'sometimes|in:pen,pro,con,rec,can',
+            'ref' => 'nullable|string|max:100',
+            'des' => 'nullable|string|max:300',
+            'fec_don' => 'nullable|date',
+            'fec_con' => 'nullable|date|after:fec_don',
+            'not' => 'nullable|string',
         ];
     }
 

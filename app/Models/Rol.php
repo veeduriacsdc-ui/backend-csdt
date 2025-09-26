@@ -85,4 +85,26 @@ class Rol extends Model
     {
         $this->update(['est' => 'ina']);
     }
+
+    // Reglas de validación
+    public static function reglas($id = null)
+    {
+        return [
+            'nom' => 'required|string|max:100',
+            'des' => 'nullable|string|max:255',
+            'est' => 'in:act,ina',
+            'perm' => 'nullable|array'
+        ];
+    }
+
+    public static function mensajes()
+    {
+        return [
+            'nom.required' => 'El nombre del rol es obligatorio.',
+            'nom.max' => 'El nombre no puede exceder 100 caracteres.',
+            'des.max' => 'La descripción no puede exceder 255 caracteres.',
+            'est.in' => 'El estado debe ser activo o inactivo.',
+            'perm.array' => 'Los permisos deben ser un arreglo.',
+        ];
+    }
 }

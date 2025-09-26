@@ -24,6 +24,7 @@ Route::prefix('usuarios')->group(function () {
         
         // CRUD básico
         Route::get('/', [UsuarioController::class, 'index']);                    // Listar usuarios
+        Route::get('/activos', [UsuarioController::class, 'usuariosActivos']);  // Usuarios activos
         Route::post('/', [UsuarioController::class, 'store']);                  // Crear usuario
         Route::get('{id}', [UsuarioController::class, 'show']);                 // Mostrar usuario
         Route::put('{id}', [UsuarioController::class, 'update']);               // Actualizar usuario
@@ -33,6 +34,7 @@ Route::prefix('usuarios')->group(function () {
         Route::patch('{id}/activar', [UsuarioController::class, 'activar']);     // Activar usuario
         Route::patch('{id}/desactivar', [UsuarioController::class, 'desactivar']); // Desactivar usuario
         Route::patch('{id}/verificar-correo', [UsuarioController::class, 'verificarCorreo']); // Verificar correo
+        Route::put('{id}/cambiar-estado', [UsuarioController::class, 'cambiarEstado']); // Cambiar estado
         
         // Estadísticas y reportes
         Route::get('estadisticas/general', [UsuarioController::class, 'estadisticas']); // Estadísticas generales
@@ -55,7 +57,7 @@ Route::prefix('usuarios')->group(function () {
         
         // Rutas por estado
         Route::prefix('activos')->group(function () {
-            Route::get('/', [UsuarioController::class, 'index'])->where('est', 'act');
+            Route::get('/', [UsuarioController::class, 'usuariosActivos']);
         });
         
         Route::prefix('inactivos')->group(function () {

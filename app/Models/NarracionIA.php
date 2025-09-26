@@ -6,32 +6,39 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class AnalisisIA extends Model
+class NarracionIA extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'analisis_ia';
+    protected $table = 'narraciones_consejo_ia';
     
     protected $fillable = [
-        'vee_id',
-        'contexto_adicional',
-        'analisis_generado',
-        'prioridad_sugerida',
-        'categoria_sugerida',
+        'codigo_narracion',
+        'tipo_narracion',
+        'contenido',
+        'narracion_generada',
         'confianza',
-        'recomendaciones',
-        'metadatos',
+        'datos_cliente',
+        'ubicacion',
+        'usu_id',
+        'vee_id',
         'est'
     ];
 
     protected $casts = [
-        'recomendaciones' => 'array',
-        'metadatos' => 'array',
+        'datos_cliente' => 'array',
+        'ubicacion' => 'array',
         'confianza' => 'integer',
+        'usu_id' => 'integer',
         'vee_id' => 'integer'
     ];
 
     // Relaciones
+    public function usuario()
+    {
+        return $this->belongsTo(Usuario::class, 'usu_id');
+    }
+
     public function veeduria()
     {
         return $this->belongsTo(Veeduria::class, 'vee_id');
@@ -43,17 +50,17 @@ class AnalisisIA extends Model
         return $query->where('est', 'act');
     }
 
-    public function scopePorPrioridad($query, $prioridad)
+    public function scopePorTipo($query, $tipo)
     {
-        return $query->where('prioridad_sugerida', $prioridad);
-    }
-
-    public function scopePorCategoria($query, $categoria)
-    {
-        return $query->where('categoria_sugerida', $categoria);
+        return $query->where('tipo_narracion', $tipo);
     }
 
     // Métodos de utilidad
+    public static function generarCodigo()
+    {
+        return 'NAR-' . strtoupper(substr(md5(uniqid()), 0, 8));
+    }
+
     public function esAltaConfianza()
     {
         return $this->confianza >= 80;
@@ -67,15 +74,5 @@ class AnalisisIA extends Model
     public function esBajaConfianza()
     {
         return $this->confianza < 50;
-    }
-
-    public function obtenerRecomendaciones()
-    {
-        return $this->recomendaciones ?? [];
-    }
-
-    public function obtenerMetadatos()
-    {
-        return $this->metadatos ?? [];
     }
 }

@@ -161,21 +161,16 @@ class Usuario extends Authenticatable
 
     public function setConAttribute($value)
     {
-        $this->attributes['con'] = Hash::make($value);
+        // Solo hashear si no está ya hasheado
+        if (!password_get_info($value)['algo']) {
+            $this->attributes['con'] = Hash::make($value);
+        } else {
+            $this->attributes['con'] = $value;
+        }
     }
 
     // Métodos de utilidad
-    public function tieneRol($rol)
-    {
-        return $this->roles()->where('nom', $rol)->exists();
-    }
 
-    public function tienePermiso($permiso)
-    {
-        return $this->roles()->whereHas('permisos', function($query) use ($permiso) {
-            $query->where('nom', $permiso);
-        })->exists();
-    }
 
     public function esCliente()
     {
@@ -190,6 +185,59 @@ class Usuario extends Authenticatable
     public function esAdministrador()
     {
         return $this->rol === 'adm';
+    }
+
+    public function esAdministradorGeneral()
+    {
+        return $this->rol === 'adm_gen';
+    }
+
+    public function puedeGestionarUsuarios()
+    {
+        return $this->esAdministradorGeneral() || 
+               $this->tienePermiso('usuarios_crear');
+    }
+
+    public function puedeGestionarRoles()
+    {
+        return $this->esAdministradorGeneral() || 
+               $this->tienePermiso('roles_crear');
+    }
+
+    public function puedeGestionarPermisos()
+    {
+        return $this->esAdministradorGeneral() || 
+               $this->tienePermiso('permisos_crear');
+    }
+
+    public function puedeGestionarVeedurias()
+    {
+        return $this->esAdministradorGeneral() || 
+               $this->tienePermiso('veedurias_crear');
+    }
+
+    public function puedeGestionarDonaciones()
+    {
+        return $this->esAdministradorGeneral() || 
+               $this->tienePermiso('donaciones_crear');
+    }
+
+    public function puedeGestionarTareas()
+    {
+        return $this->esAdministradorGeneral() || 
+               $this->tienePermiso('tareas_crear');
+    }
+
+    public function puedeVerLogs()
+    {
+        return $this->esAdministradorGeneral() || 
+               $this->tienePermiso('logs_leer');
+    }
+
+    public function puedeVerEstadisticas()
+    {
+        return $this->esAdministradorGeneral() || 
+               $this->tienePermiso('estadisticas_ver');
     }
 
     public function actualizarUltimoAcceso()
@@ -254,5 +302,45 @@ class Usuario extends Authenticatable
             'rol.required' => 'El rol es obligatorio',
             'rol.in' => 'El rol no es válido',
         ];
+    }
+
+    /**
+     * Obtener todos los permisos del usuario
+     */
+    public function obtenerPermisos()
+    {
+        if ($this->esAdministradorGeneral()) {
+            // El administrador general tiene todos los permisos
+            return App\Models\PermisoMejorado::activos()->get();
+        }
+
+        // Obtener permisos a través de los roles
+        $permisos = collect();
+        
+        foreach ($this->roles as $rol) {
+            $permisos = $permisos->merge($rol->permisos()->activos()->get());
+        }
+
+        return $permisos->unique('id');
+    }
+
+    /**
+     * Verificar si el usuario tiene un permiso específico
+     */
+    public function tienePermiso($permiso)
+    {
+        if ($this->esAdministradorGeneral()) {
+            return true;
+        }
+
+        return $this->obtenerPermisos()->contains('slug', $permiso);
+    }
+
+    /**
+     * Verificar si el usuario tiene un rol específico
+     */
+    public function tieneRol($rol)
+    {
+        return $this->rol === $rol || $this->esAdministradorGeneral();
     }
 }

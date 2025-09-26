@@ -6,14 +6,14 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class VerificarRol
+class VerificarPermiso
 {
     /**
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $rol): Response
+    public function handle(Request $request, Closure $next, string $permiso): Response
     {
         $usuario = $request->user();
 
@@ -24,16 +24,16 @@ class VerificarRol
             ], 401);
         }
 
-        // El administrador general tiene acceso a todo
+        // El administrador general tiene todos los permisos
         if ($usuario->rol === 'adm_gen') {
             return $next($request);
         }
 
-        // Verificar rol específico
-        if ($usuario->rol !== $rol) {
+        // Verificar si el usuario tiene el permiso específico
+        if (!$usuario->tienePermiso($permiso)) {
             return response()->json([
                 'success' => false,
-                'message' => 'No tiene permisos para acceder a este recurso'
+                'message' => 'No tiene permisos para realizar esta acción'
             ], 403);
         }
 

@@ -17,6 +17,33 @@ use Illuminate\Validation\Rule;
 class RegistroControlador extends Controller
 {
     /**
+     * Validar campos de registro sin crear el usuario
+     */
+    public function validarCampos(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nom' => 'sometimes|required|string|max:255',
+            'ape' => 'sometimes|required|string|max:255',
+            'cor' => 'sometimes|required|string|email|max:255|unique:usu,cor',
+            'con' => 'sometimes|required|string|min:8|confirmed',
+            'tel' => 'sometimes|required|string|max:20',
+            'doc' => 'sometimes|required|string|max:20|unique:usu,doc',
+            'tip_doc' => 'sometimes|required|string|max:10',
+            'fec_nac' => 'sometimes|required|date',
+            'dir' => 'sometimes|nullable|string|max:255',
+            'ciu' => 'sometimes|nullable|string|max:100',
+            'dep' => 'sometimes|nullable|string|max:100',
+            'gen' => 'sometimes|required|string|in:m,f,o',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Errores de validación', 'errors' => $validator->errors()], 422);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Campos válidos'], 200);
+    }
+
+    /**
      * Validar que la cédula no esté registrada en ninguna tabla
      */
     private function validarCedulaUnica($documento_identidad)
