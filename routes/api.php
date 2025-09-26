@@ -9,7 +9,11 @@ use App\Http\Controllers\Api\RolController;
 use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\RegistroControlador;
 use Illuminate\Support\Facades\Route;
+
+// Incluir rutas específicas de módulos
+require_once __DIR__ . '/api-usuarios.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -41,6 +45,16 @@ Route::prefix('auth')->group(function () {
     Route::post('/recuperar-contrasena', [AuthController::class, 'recuperarContrasena']);
     Route::post('/resetear-contrasena', [AuthController::class, 'resetearContrasena']);
     Route::post('/verificar-email', [AuthController::class, 'verificarEmail']);
+});
+
+// Rutas de registro
+Route::prefix('registro')->group(function () {
+    Route::post('/validar-campos', [RegistroControlador::class, 'validarCampos']);
+    Route::post('/registrar', [RegistroControlador::class, 'registrar']);
+    Route::post('/verificar-email', [RegistroControlador::class, 'verificarEmail']);
+    Route::get('/pendientes', [RegistroControlador::class, 'obtenerPendientes'])->middleware('auth:sanctum');
+    Route::post('/aprobar/{id}', [RegistroControlador::class, 'aprobar'])->middleware('auth:sanctum');
+    Route::post('/rechazar/{id}', [RegistroControlador::class, 'rechazar'])->middleware('auth:sanctum');
 });
 
 // Rutas públicas (sin autenticación)

@@ -4,49 +4,45 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
-use App\Models\Log;
+use App\Models\Rol;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class UsuarioController extends Controller
 {
     /**
-     * Obtener lista de usuarios
+     * Listar usuarios con filtros y paginación
      */
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Usuario::query();
+            $query = Usuario::with(['roles']);
 
             // Filtros
             if ($request->has('rol')) {
                 $query->where('rol', $request->rol);
             }
+
             if ($request->has('est')) {
                 $query->where('est', $request->est);
             }
-            if ($request->has('ciu')) {
-                $query->where('ciu', 'like', '%' . $request->ciu . '%');
-            }
-            if ($request->has('dep')) {
-                $query->where('dep', 'like', '%' . $request->dep . '%');
-            }
 
-            // Búsqueda
             if ($request->has('buscar')) {
                 $buscar = $request->buscar;
                 $query->where(function($q) use ($buscar) {
-                    $q->where('nom', 'like', '%' . $buscar . '%')
-                      ->orWhere('ape', 'like', '%' . $buscar . '%')
-                      ->orWhere('cor', 'like', '%' . $buscar . '%')
-                      ->orWhere('doc', 'like', '%' . $buscar . '%');
+                    $q->where('nom', 'like', "%{$buscar}%")
+                      ->orWhere('ape', 'like', "%{$buscar}%")
+                      ->orWhere('cor', 'like', "%{$buscar}%")
+                      ->orWhere('doc', 'like', "%{$buscar}%");
                 });
             }
 
             // Ordenamiento
-            $orden = $request->get('orden', 'id');
+            $orden = $request->get('orden', 'created_at');
             $direccion = $request->get('direccion', 'desc');
             $query->orderBy($orden, $direccion);
 
@@ -61,38 +57,11 @@ class UsuarioController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al listar usuarios: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener usuarios: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Obtener usuario por ID
-     */
-    public function show($id): JsonResponse
-    {
-        try {
-            $usuario = Usuario::with(['veedurias', 'donaciones', 'archivos', 'roles'])->find($id);
-
-            if (!$usuario) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado'
-                ], 404);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $usuario,
-                'message' => 'Usuario obtenido exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener usuario: ' . $e->getMessage()
+                'message' => 'Error al obtener usuarios',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -103,34 +72,101 @@ class UsuarioController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), Usuario::reglas(), Usuario::mensajes());
+            $validator = Validator::make($request->all(), [
+                'nom' => 'required|string|max:100',
+                'ape' => 'required|string|max:100',
+                'cor' => 'required|email|max:150|unique:usu,cor',
+                'con' => 'required|string|min:8',
+                'tel' => 'nullable|string|max:20',
+                'doc' => 'nullable|string|max:20|unique:usu,doc',
+                'tip_doc' => 'nullable|in:cc,ce,ti,pp,nit',
+                'fec_nac' => 'nullable|date',
+                'dir' => 'nullable|string|max:200',
+                'ciu' => 'nullable|string|max:100',
+                'dep' => 'nullable|string|max:100',
+                'gen' => 'nullable|in:m,f,o,n',
+                'rol' => 'required|in:cli,ope,adm',
+                'est' => 'nullable|in:act,ina,sus,pen'
+            ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Errores de validación',
+                    'message' => 'Datos de validación incorrectos',
                     'errors' => $validator->errors()
                 ], 422);
             }
 
-            $datos = $request->all();
-            $datos['con'] = Hash::make($datos['con']);
+            DB::beginTransaction();
 
-            $usuario = Usuario::create($datos);
+            $usuario = Usuario::create([
+                'nom' => $request->nom,
+                'ape' => $request->ape,
+                'cor' => $request->cor,
+                'con' => Hash::make($request->con),
+                'tel' => $request->tel,
+                'doc' => $request->doc,
+                'tip_doc' => $request->tip_doc,
+                'fec_nac' => $request->fec_nac,
+                'dir' => $request->dir,
+                'ciu' => $request->ciu,
+                'dep' => $request->dep,
+                'gen' => $request->gen,
+                'rol' => $request->rol,
+                'est' => $request->est ?? 'pen',
+                'not' => $request->not
+            ]);
 
-            // Log de creación
-            Log::logCreacion('usuarios', $usuario->id, $usuario->toArray());
+            // Asignar roles si se proporcionan
+            if ($request->has('roles')) {
+                $usuario->roles()->attach($request->roles);
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'data' => $usuario,
+                'data' => $usuario->load('roles'),
                 'message' => 'Usuario creado exitosamente'
             ], 201);
 
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al crear usuario: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear usuario: ' . $e->getMessage()
+                'message' => 'Error al crear usuario',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mostrar usuario específico
+     */
+    public function show($id): JsonResponse
+    {
+        try {
+            $usuario = Usuario::with(['roles', 'veedurias', 'donaciones', 'tareasAsignadas'])
+                             ->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $usuario,
+                'message' => 'Usuario obtenido exitosamente'
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuario no encontrado'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener usuario: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener usuario',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -141,48 +177,71 @@ class UsuarioController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         try {
-            $usuario = Usuario::find($id);
+            $usuario = Usuario::findOrFail($id);
 
-            if (!$usuario) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado'
-                ], 404);
-            }
-
-            $validator = Validator::make($request->all(), Usuario::reglas($id), Usuario::mensajes());
+            $validator = Validator::make($request->all(), [
+                'nom' => 'sometimes|string|max:100',
+                'ape' => 'sometimes|string|max:100',
+                'cor' => 'sometimes|email|max:150|unique:usu,cor,' . $id,
+                'con' => 'sometimes|string|min:8',
+                'tel' => 'nullable|string|max:20',
+                'doc' => 'nullable|string|max:20|unique:usu,doc,' . $id,
+                'tip_doc' => 'nullable|in:cc,ce,ti,pp,nit',
+                'fec_nac' => 'nullable|date',
+                'dir' => 'nullable|string|max:200',
+                'ciu' => 'nullable|string|max:100',
+                'dep' => 'nullable|string|max:100',
+                'gen' => 'nullable|in:m,f,o,n',
+                'rol' => 'sometimes|in:cli,ope,adm',
+                'est' => 'sometimes|in:act,ina,sus,pen'
+            ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Errores de validación',
+                    'message' => 'Datos de validación incorrectos',
                     'errors' => $validator->errors()
                 ], 422);
             }
 
-            $datosAnteriores = $usuario->toArray();
-            $datos = $request->all();
+            DB::beginTransaction();
 
-            // Si se proporciona contraseña, hashearla
-            if (isset($datos['con'])) {
-                $datos['con'] = Hash::make($datos['con']);
+            $datos = $request->only([
+                'nom', 'ape', 'cor', 'tel', 'doc', 'tip_doc', 
+                'fec_nac', 'dir', 'ciu', 'dep', 'gen', 'rol', 'est', 'not'
+            ]);
+
+            if ($request->has('con')) {
+                $datos['con'] = Hash::make($request->con);
             }
 
             $usuario->update($datos);
 
-            // Log de actualización
-            Log::logActualizacion('usuarios', $usuario->id, $datosAnteriores, $usuario->toArray());
+            // Actualizar roles si se proporcionan
+            if ($request->has('roles')) {
+                $usuario->roles()->sync($request->roles);
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'data' => $usuario,
+                'data' => $usuario->load('roles'),
                 'message' => 'Usuario actualizado exitosamente'
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar usuario: ' . $e->getMessage()
+                'message' => 'Usuario no encontrado'
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al actualizar usuario: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar usuario',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -193,181 +252,25 @@ class UsuarioController extends Controller
     public function destroy($id): JsonResponse
     {
         try {
-            $usuario = Usuario::find($id);
-
-            if (!$usuario) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado'
-                ], 404);
-            }
-
-            $datosAnteriores = $usuario->toArray();
+            $usuario = Usuario::findOrFail($id);
             $usuario->delete();
-
-            // Log de eliminación
-            Log::logEliminacion('usuarios', $usuario->id, $datosAnteriores);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Usuario eliminado exitosamente'
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar usuario: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Restaurar usuario
-     */
-    public function restore($id): JsonResponse
-    {
-        try {
-            $usuario = Usuario::withTrashed()->find($id);
-
-            if (!$usuario) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado'
-                ], 404);
-            }
-
-            $usuario->restore();
-
-            // Log de restauración
-            Log::logRestauracion('usuarios', $usuario->id);
-
-            return response()->json([
-                'success' => true,
-                'data' => $usuario,
-                'message' => 'Usuario restaurado exitosamente'
-            ]);
-
+                'message' => 'Usuario no encontrado'
+            ], 404);
         } catch (\Exception $e) {
+            Log::error('Error al eliminar usuario: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al restaurar usuario: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Cambiar estado de usuario
-     */
-    public function cambiarEstado(Request $request, $id): JsonResponse
-    {
-        try {
-            $usuario = Usuario::find($id);
-
-            if (!$usuario) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado'
-                ], 404);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'est' => 'required|in:act,ina,sus,pen'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Estado inválido',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $estadoAnterior = $usuario->est;
-            $usuario->cambiarEstado($request->est, $request->motivo);
-
-            return response()->json([
-                'success' => true,
-                'data' => $usuario,
-                'message' => 'Estado cambiado exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al cambiar estado: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Verificar correo de usuario
-     */
-    public function verificarCorreo($id): JsonResponse
-    {
-        try {
-            $usuario = Usuario::find($id);
-
-            if (!$usuario) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado'
-                ], 404);
-            }
-
-            $usuario->verificarCorreo();
-
-            // Log de verificación
-            Log::crear('verificar_correo', 'usuarios', $usuario->id, 'Correo verificado');
-
-            return response()->json([
-                'success' => true,
-                'data' => $usuario,
-                'message' => 'Correo verificado exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al verificar correo: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Obtener estadísticas de usuario
-     */
-    public function estadisticas($id): JsonResponse
-    {
-        try {
-            $usuario = Usuario::find($id);
-
-            if (!$usuario) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Usuario no encontrado'
-                ], 404);
-            }
-
-            $estadisticas = [
-                'total_veedurias' => $usuario->veedurias()->count(),
-                'veedurias_activas' => $usuario->veedurias()->where('est', '!=', 'cer')->count(),
-                'total_donaciones' => $usuario->donaciones()->count(),
-                'monto_total_donado' => $usuario->donaciones()->where('est', 'con')->sum('mon'),
-                'total_archivos' => $usuario->archivos()->count(),
-                'ultimo_acceso' => $usuario->ult_acc,
-                'fecha_registro' => $usuario->created_at,
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $estadisticas,
-                'message' => 'Estadísticas obtenidas exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+                'message' => 'Error al eliminar usuario',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -378,30 +281,172 @@ class UsuarioController extends Controller
     public function buscar(Request $request): JsonResponse
     {
         try {
-            $query = Usuario::query();
+            $termino = $request->get('q', '');
+            $limite = $request->get('limite', 10);
 
-            if ($request->has('termino')) {
-                $termino = $request->termino;
-                $query->where(function($q) use ($termino) {
-                    $q->where('nom', 'like', '%' . $termino . '%')
-                      ->orWhere('ape', 'like', '%' . $termino . '%')
-                      ->orWhere('cor', 'like', '%' . $termino . '%')
-                      ->orWhere('doc', 'like', '%' . $termino . '%');
-                });
-            }
-
-            $usuarios = $query->limit(10)->get();
+            $usuarios = Usuario::where(function($query) use ($termino) {
+                $query->where('nom', 'like', "%{$termino}%")
+                      ->orWhere('ape', 'like', "%{$termino}%")
+                      ->orWhere('cor', 'like', "%{$termino}%")
+                      ->orWhere('doc', 'like', "%{$termino}%");
+            })
+            ->where('est', 'act')
+            ->limit($limite)
+            ->get(['id', 'nom', 'ape', 'cor', 'rol', 'est']);
 
             return response()->json([
                 'success' => true,
                 'data' => $usuarios,
-                'message' => 'Búsqueda completada exitosamente'
+                'message' => 'Búsqueda completada'
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error en búsqueda de usuarios: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error en la búsqueda: ' . $e->getMessage()
+                'message' => 'Error en la búsqueda',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Validar datos de usuario
+     */
+    public function validar(Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'cor' => 'required|email|unique:usu,cor',
+                'doc' => 'nullable|string|unique:usu,doc'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Datos no válidos',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Datos válidos'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error en validación de usuario: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en validación',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Activar usuario
+     */
+    public function activar($id): JsonResponse
+    {
+        try {
+            $usuario = Usuario::findOrFail($id);
+            $usuario->update(['est' => 'act']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario activado exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al activar usuario: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al activar usuario',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Desactivar usuario
+     */
+    public function desactivar($id): JsonResponse
+    {
+        try {
+            $usuario = Usuario::findOrFail($id);
+            $usuario->update(['est' => 'ina']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario desactivado exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al desactivar usuario: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al desactivar usuario',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Verificar correo
+     */
+    public function verificarCorreo($id): JsonResponse
+    {
+        try {
+            $usuario = Usuario::findOrFail($id);
+            $usuario->verificarCorreo();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Correo verificado exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al verificar correo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al verificar correo',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener estadísticas de usuarios
+     */
+    public function estadisticas(): JsonResponse
+    {
+        try {
+            $estadisticas = [
+                'total' => Usuario::count(),
+                'activos' => Usuario::where('est', 'act')->count(),
+                'inactivos' => Usuario::where('est', 'ina')->count(),
+                'pendientes' => Usuario::where('est', 'pen')->count(),
+                'suspendidos' => Usuario::where('est', 'sus')->count(),
+                'clientes' => Usuario::where('rol', 'cli')->count(),
+                'operadores' => Usuario::where('rol', 'ope')->count(),
+                'administradores' => Usuario::where('rol', 'adm')->count(),
+                'verificados' => Usuario::where('cor_ver', true)->count(),
+                'no_verificados' => Usuario::where('cor_ver', false)->count()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $estadisticas,
+                'message' => 'Estadísticas obtenidas exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener estadísticas: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener estadísticas',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

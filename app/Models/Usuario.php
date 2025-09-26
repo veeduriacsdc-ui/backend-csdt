@@ -3,22 +3,39 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\HasApiTokens;
 
 class Usuario extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
-    protected $table = 'usuarios';
-    
+    protected $table = 'usu';
+    protected $primaryKey = 'id';
+
     protected $fillable = [
-        'nom', 'ape', 'cor', 'con', 'tel', 'doc', 'tip_doc', 'fec_nac', 
-        'dir', 'ciu', 'dep', 'gen', 'rol', 'est', 'cor_ver', 'cor_ver_en', 
-        'ult_acc', 'not'
+        'nom',
+        'ape', 
+        'cor',
+        'con',
+        'tel',
+        'doc',
+        'tip_doc',
+        'fec_nac',
+        'dir',
+        'ciu',
+        'dep',
+        'gen',
+        'rol',
+        'est',
+        'cor_ver',
+        'cor_ver_en',
+        'ult_acc',
+        'not'
     ];
 
     protected $hidden = [
@@ -27,26 +44,33 @@ class Usuario extends Authenticatable
     ];
 
     protected $casts = [
-        'fec_nac' => 'date',
+        'cor_ver' => 'boolean',
         'cor_ver_en' => 'datetime',
         'ult_acc' => 'datetime',
-        'cor_ver' => 'boolean',
+        'fec_nac' => 'date',
     ];
 
     // Relaciones
+    public function roles()
+    {
+        return $this->belongsToMany(Rol::class, 'usu_rol', 'usu_id', 'rol_id')
+                    ->withPivot(['act', 'asig_por', 'asig_en', 'not'])
+                    ->withTimestamps();
+    }
+
     public function veedurias()
     {
         return $this->hasMany(Veeduria::class, 'usu_id');
     }
 
+    public function veeduriasAsignadas()
+    {
+        return $this->hasMany(Veeduria::class, 'ope_id');
+    }
+
     public function donaciones()
     {
         return $this->hasMany(Donacion::class, 'usu_id');
-    }
-
-    public function archivos()
-    {
-        return $this->hasMany(Archivo::class, 'usu_id');
     }
 
     public function tareasAsignadas()
@@ -59,11 +83,19 @@ class Usuario extends Authenticatable
         return $this->hasMany(Tarea::class, 'asig_por');
     }
 
-    public function roles()
+    public function archivos()
     {
-        return $this->belongsToMany(Rol::class, 'usuarios_roles', 'usu_id', 'rol_id')
-            ->withPivot('act', 'asig_en', 'asig_por', 'not')
-            ->withTimestamps();
+        return $this->hasMany(Archivo::class, 'usu_id');
+    }
+
+    public function analisisIA()
+    {
+        return $this->hasMany(AnalisisIA::class, 'usu_id');
+    }
+
+    public function narracionesIA()
+    {
+        return $this->hasMany(NarracionIA::class, 'usu_id');
     }
 
     public function logs()
@@ -97,31 +129,57 @@ class Usuario extends Authenticatable
         return $query->where('rol', 'adm');
     }
 
-    public function scopeVerificados($query)
-    {
-        return $query->where('cor_ver', true);
-    }
-
-    // Métodos de negocio
+    // Accessors
     public function getNombreCompletoAttribute()
     {
-        return $this->nom . ' ' . $this->ape;
+        return trim($this->nom . ' ' . $this->ape);
     }
 
-    public function getEstadoColorAttribute()
+    public function getInicialesAttribute()
     {
-        return match ($this->est) {
-            'act' => 'success',
-            'ina' => 'warning',
-            'sus' => 'danger',
-            'pen' => 'info',
-            default => 'secondary'
-        };
+        $iniciales = '';
+        if ($this->nom) $iniciales .= strtoupper(substr($this->nom, 0, 1));
+        if ($this->ape) $iniciales .= strtoupper(substr($this->ape, 0, 1));
+        return $iniciales;
     }
 
-    public function esAdministrador()
+    // Mutators
+    public function setCorAttribute($value)
     {
-        return $this->rol === 'adm';
+        $this->attributes['cor'] = strtolower(trim($value));
+    }
+
+    public function setNomAttribute($value)
+    {
+        $this->attributes['nom'] = ucwords(strtolower(trim($value)));
+    }
+
+    public function setApeAttribute($value)
+    {
+        $this->attributes['ape'] = ucwords(strtolower(trim($value)));
+    }
+
+    public function setConAttribute($value)
+    {
+        $this->attributes['con'] = Hash::make($value);
+    }
+
+    // Métodos de utilidad
+    public function tieneRol($rol)
+    {
+        return $this->roles()->where('nom', $rol)->exists();
+    }
+
+    public function tienePermiso($permiso)
+    {
+        return $this->roles()->whereHas('permisos', function($query) use ($permiso) {
+            $query->where('nom', $permiso);
+        })->exists();
+    }
+
+    public function esCliente()
+    {
+        return $this->rol === 'cli';
     }
 
     public function esOperador()
@@ -129,9 +187,9 @@ class Usuario extends Authenticatable
         return $this->rol === 'ope';
     }
 
-    public function esCliente()
+    public function esAdministrador()
     {
-        return $this->rol === 'cli';
+        return $this->rol === 'adm';
     }
 
     public function actualizarUltimoAcceso()
@@ -143,7 +201,7 @@ class Usuario extends Authenticatable
     {
         $this->update([
             'cor_ver' => true,
-            'cor_ver_en' => now(),
+            'cor_ver_en' => now()
         ]);
     }
 
@@ -152,101 +210,49 @@ class Usuario extends Authenticatable
         $this->update(['est' => 'act']);
     }
 
-    public function suspenderCuenta()
+    // Reglas de validación
+    public static function reglas()
     {
-        $this->update(['est' => 'sus']);
-    }
-
-    public function cambiarEstado($nuevoEstado, $motivo = null)
-    {
-        $estadoAnterior = $this->est;
-        $this->update(['est' => $nuevoEstado]);
-        
-        // Registrar el cambio
-        $this->logs()->create([
-            'acc' => 'cambiar_estado',
-            'tab' => 'usuarios',
-            'reg_id' => $this->id,
-            'des' => "Estado cambiado de {$estadoAnterior} a {$nuevoEstado}",
-            'dat_ant' => ['est' => $estadoAnterior],
-            'dat_nue' => ['est' => $nuevoEstado],
-            'ip' => request()->ip(),
-            'age_usu' => request()->userAgent()
-        ]);
-    }
-
-    // Mutators
-    public function setConAttribute($value)
-    {
-        if ($value) {
-            $this->attributes['con'] = Hash::make($value);
-        }
-    }
-
-    public function setNomAttribute($value)
-    {
-        $this->attributes['nom'] = ucwords(strtolower($value));
-    }
-
-    public function setApeAttribute($value)
-    {
-        $this->attributes['ape'] = ucwords(strtolower($value));
-    }
-
-    public function setCorAttribute($value)
-    {
-        $this->attributes['cor'] = strtolower($value);
-    }
-
-    // Validaciones
-    public static function reglas($id = null)
-    {
-        $uniqueEmail = 'unique:usuarios,cor';
-        if ($id) {
-            $uniqueEmail .= ','.$id.',id';
-        }
-
-        $uniqueDocumento = 'unique:usuarios,doc';
-        if ($id) {
-            $uniqueDocumento .= ','.$id.',id';
-        }
-
         return [
-            'nom' => 'required|string|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
-            'ape' => 'required|string|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
-            'cor' => 'required|email|max:150|'.$uniqueEmail,
-            'con' => $id ? 'nullable|string|min:8|max:255' : 'required|string|min:8|max:255',
-            'tel' => 'nullable|string|max:20|regex:/^[\+]?[0-9\-\s\(\)]{7,20}$/',
-            'doc' => 'nullable|string|max:20|'.$uniqueDocumento,
-            'tip_doc' => 'nullable|in:cc,ce,ti,pp,nit',
-            'fec_nac' => 'nullable|date|before:today|after:1900-01-01',
-            'dir' => 'nullable|string|max:200',
+            'nom' => 'required|string|max:100',
+            'ape' => 'required|string|max:100',
+            'cor' => 'required|email|unique:usu,cor',
+            'con' => 'required|string|min:8',
+            'con_confirmation' => 'required_with:con|same:con',
+            'tel' => 'nullable|string|max:20',
+            'doc' => 'required|string|max:20|unique:usu,doc',
+            'tip_doc' => 'required|string|in:cc,ce,ti,pp,nit',
+            'fec_nac' => 'nullable|date|before:today',
+            'dir' => 'nullable|string|max:255',
             'ciu' => 'nullable|string|max:100',
             'dep' => 'nullable|string|max:100',
-            'gen' => 'nullable|in:m,f,o,n',
-            'rol' => 'required|in:cli,ope,adm',
-            'est' => 'sometimes|in:act,ina,sus,pen',
+            'gen' => 'nullable|string|in:m,f,o,n',
+            'rol' => 'required|string|in:cli,ope,adm',
+            'est' => 'nullable|string|in:act,ina,sus,pen',
         ];
     }
 
+    // Mensajes de validación
     public static function mensajes()
     {
         return [
-            'nom.required' => 'El nombre es obligatorio.',
-            'nom.regex' => 'El nombre solo puede contener letras y espacios.',
-            'ape.required' => 'Los apellidos son obligatorios.',
-            'ape.regex' => 'Los apellidos solo pueden contener letras y espacios.',
-            'cor.required' => 'El correo electrónico es obligatorio.',
-            'cor.email' => 'El formato del correo electrónico no es válido.',
-            'cor.unique' => 'Este correo electrónico ya está registrado.',
-            'con.required' => 'La contraseña es obligatoria.',
-            'con.min' => 'La contraseña debe tener al menos 8 caracteres.',
-            'tel.regex' => 'El formato del teléfono no es válido.',
-            'doc.unique' => 'Este documento de identidad ya está registrado.',
-            'fec_nac.before' => 'La fecha de nacimiento debe ser anterior a hoy.',
-            'fec_nac.after' => 'La fecha de nacimiento no puede ser anterior a 1900.',
-            'rol.required' => 'El rol es obligatorio.',
-            'rol.in' => 'El rol debe ser cliente, operador o administrador.',
+            'nom.required' => 'El nombre es obligatorio',
+            'nom.max' => 'El nombre no puede tener más de 100 caracteres',
+            'ape.required' => 'El apellido es obligatorio',
+            'ape.max' => 'El apellido no puede tener más de 100 caracteres',
+            'cor.required' => 'El correo electrónico es obligatorio',
+            'cor.email' => 'El correo electrónico debe tener un formato válido',
+            'cor.unique' => 'Este correo electrónico ya está registrado',
+            'con.required' => 'La contraseña es obligatoria',
+            'con.min' => 'La contraseña debe tener al menos 8 caracteres',
+            'con_confirmation.required_with' => 'La confirmación de contraseña es obligatoria',
+            'con_confirmation.same' => 'Las contraseñas no coinciden',
+            'doc.required' => 'El documento es obligatorio',
+            'doc.unique' => 'Este documento ya está registrado',
+            'tip_doc.required' => 'El tipo de documento es obligatorio',
+            'tip_doc.in' => 'El tipo de documento no es válido',
+            'rol.required' => 'El rol es obligatorio',
+            'rol.in' => 'El rol no es válido',
         ];
     }
 }

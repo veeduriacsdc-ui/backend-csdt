@@ -19,7 +19,14 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), [
+            // Manejar tanto campos nuevos como antiguos para compatibilidad
+            $email = $request->cor ?? $request->email;
+            $password = $request->con ?? $request->password;
+
+            $validator = Validator::make([
+                'cor' => $email,
+                'con' => $password
+            ], [
                 'cor' => 'required|email',
                 'con' => 'required|string',
             ]);
@@ -32,9 +39,9 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            $usuario = Usuario::where('cor', $request->cor)->first();
+            $usuario = Usuario::where('cor', $email)->first();
 
-            if (!$usuario || !Hash::check($request->con, $usuario->con)) {
+            if (!$usuario || !Hash::check($password, $usuario->con)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Credenciales inválidas'
@@ -57,7 +64,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'usuario' => $usuario,
+                    'user' => $usuario,
                     'token' => $token,
                     'token_type' => 'Bearer'
                 ],
@@ -78,7 +85,21 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), Usuario::reglas(), Usuario::mensajes());
+            // Mapear campos del frontend a campos de la base de datos
+            $datos = [
+                'nom' => $request->nom ?? $request->nombre ?? '',
+                'ape' => $request->ape ?? $request->apellido ?? '',
+                'cor' => $request->cor ?? $request->email ?? '',
+                'con' => $request->con ?? $request->password ?? $request->pass ?? '',
+                'con_confirmation' => $request->con_confirmation ?? $request->password_confirmation ?? $request->pass_confirmation ?? '',
+                'tel' => $request->tel ?? $request->telefono ?? '',
+                'doc' => $request->doc ?? $request->numeroDocumento ?? $request->documento ?? '',
+                'tip_doc' => $request->tip_doc ?? $request->tipoDocumento ?? 'cc',
+                'rol' => $request->rol ?? 'cli',
+                'est' => 'act', // Activo por defecto
+            ];
+
+            $validator = Validator::make($datos, Usuario::reglas(), Usuario::mensajes());
 
             if ($validator->fails()) {
                 return response()->json([
@@ -88,19 +109,20 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            $datos = $request->all();
-            // No hashear aquí, el mutator del modelo lo hace automáticamente
-            $datos['est'] = 'pen'; // Pendiente de verificación
+            // Remover confirmation del array de datos
+            unset($datos['con_confirmation']);
 
             $usuario = Usuario::create($datos);
 
             // Log de registro
-            Log::logCreacion('usuarios', $usuario->id, $usuario->toArray());
+            Log::crear('registro', 'usuarios', $usuario->id, 'Usuario registrado');
 
             return response()->json([
                 'success' => true,
-                'data' => $usuario,
-                'message' => 'Usuario registrado exitosamente. Verifique su correo electrónico.'
+                'data' => [
+                    'user' => $usuario,
+                    'message' => 'Usuario registrado exitosamente. Verifique su correo electrónico.'
+                ]
             ], 201);
 
         } catch (\Exception $e) {

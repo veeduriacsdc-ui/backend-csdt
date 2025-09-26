@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: csdt_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: csdt_production
+      POSTGRES_USER: csdt_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - csdt_network
+
+  # Redis para caché y sesiones
+  redis:
+    image: redis:7-alpine
+    container_name: csdt_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - csdt_network
+
+  # Backend Laravel
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: csdt_backend
+    restart: unless-stopped
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=csdt_production
+      - DB_USERNAME=csdt_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - csdt_network
+
+  # Frontend React
+  frontend:
+    build:
+      context: ../frontend-csdt-final
+      dockerfile: Dockerfile.production
+    container_name: csdt_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+    networks:
+      - csdt_network
+
+  # Nginx como proxy reverso
+  nginx:
+    image: nginx:alpine
+    container_name: csdt_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+      - ../frontend-csdt-final/dist:/var/www/html
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - csdt_network
+
+  # Certbot para SSL
+  certbot:
+    image: certbot/certbot
+    container_name: csdt_certbot
+    volumes:
+      - ./ssl:/etc/letsencrypt
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    command: certonly --webroot --webroot-path=/var/www/html --email admin@csdt.org --agree-tos --no-eff-email -d csdt.org -d www.csdt.org
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  csdt_network:
+    driver: bridge

@@ -4,27 +4,38 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Rol extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $table = 'roles';
-    
+    protected $table = 'rol';
+    protected $primaryKey = 'id';
+
     protected $fillable = [
-        'nom', 'des', 'est', 'per'
+        'nom',
+        'des',
+        'est',
+        'perm'
     ];
 
     protected $casts = [
-        'per' => 'array',
+        'perm' => 'array',
     ];
 
     // Relaciones
     public function usuarios()
     {
-        return $this->belongsToMany(Usuario::class, 'usuarios_roles', 'rol_id', 'usu_id')
-            ->withPivot('act', 'asig_en', 'asig_por', 'not')
-            ->withTimestamps();
+        return $this->belongsToMany(Usuario::class, 'usu_rol', 'rol_id', 'usu_id')
+                    ->withPivot(['act', 'asig_por', 'asig_en', 'not'])
+                    ->withTimestamps();
+    }
+
+    public function permisos()
+    {
+        return $this->belongsToMany(Permiso::class, 'rol_perm', 'rol_id', 'perm_id')
+                    ->withTimestamps();
     }
 
     // Scopes
@@ -38,23 +49,31 @@ class Rol extends Model
         return $query->where('est', 'ina');
     }
 
-    // Métodos de negocio
-    public function getEstadoColorAttribute()
+    // Métodos de utilidad
+    public function tienePermiso($permiso)
     {
-        return match ($this->est) {
-            'act' => 'success',
-            'ina' => 'danger',
-            default => 'secondary'
-        };
+        if (is_array($this->perm)) {
+            return in_array($permiso, $this->perm);
+        }
+        return false;
     }
 
-    public function getEstadoTextoAttribute()
+    public function agregarPermiso($permiso)
     {
-        return match ($this->est) {
-            'act' => 'Activo',
-            'ina' => 'Inactivo',
-            default => 'Desconocido'
-        };
+        $permisos = $this->perm ?? [];
+        if (!in_array($permiso, $permisos)) {
+            $permisos[] = $permiso;
+            $this->update(['perm' => $permisos]);
+        }
+    }
+
+    public function quitarPermiso($permiso)
+    {
+        $permisos = $this->perm ?? [];
+        $permisos = array_filter($permisos, function($p) use ($permiso) {
+            return $p !== $permiso;
+        });
+        $this->update(['perm' => array_values($permisos)]);
     }
 
     public function activar()
@@ -65,57 +84,5 @@ class Rol extends Model
     public function desactivar()
     {
         $this->update(['est' => 'ina']);
-    }
-
-    public function tienePermiso($permiso)
-    {
-        $permisos = $this->per ?? [];
-        return in_array($permiso, $permisos);
-    }
-
-    public function agregarPermiso($permiso)
-    {
-        $permisos = $this->per ?? [];
-        if (!in_array($permiso, $permisos)) {
-            $permisos[] = $permiso;
-            $this->update(['per' => $permisos]);
-        }
-    }
-
-    public function quitarPermiso($permiso)
-    {
-        $permisos = $this->per ?? [];
-        $permisos = array_filter($permisos, function($p) use ($permiso) {
-            return $p !== $permiso;
-        });
-        $this->update(['per' => array_values($permisos)]);
-    }
-
-    // Validaciones
-    public static function reglas($id = null)
-    {
-        $uniqueNombre = 'unique:roles,nom';
-        if ($id) {
-            $uniqueNombre .= ','.$id.',id';
-        }
-
-        return [
-            'nom' => 'required|string|max:100|'.$uniqueNombre,
-            'des' => 'nullable|string|max:255',
-            'est' => 'sometimes|in:act,ina',
-            'per' => 'nullable|array',
-        ];
-    }
-
-    public static function mensajes()
-    {
-        return [
-            'nom.required' => 'El nombre del rol es obligatorio.',
-            'nom.max' => 'El nombre del rol no puede exceder 100 caracteres.',
-            'nom.unique' => 'Este nombre de rol ya existe.',
-            'des.max' => 'La descripción no puede exceder 255 caracteres.',
-            'est.in' => 'El estado debe ser activo o inactivo.',
-            'per.array' => 'Los permisos deben ser un arreglo.',
-        ];
     }
 }

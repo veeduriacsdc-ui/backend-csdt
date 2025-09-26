@@ -9,17 +9,16 @@ class Log extends Model
 {
     use HasFactory;
 
-    protected $table = 'logs';
+    protected $table = 'log';
     
     protected $fillable = [
         'usu_id', 'acc', 'tab', 'reg_id', 'des', 'dat_ant', 'dat_nue', 
-        'ip', 'age_usu', 'fec'
+        'ip', 'age_usu'
     ];
 
     protected $casts = [
         'dat_ant' => 'array',
         'dat_nue' => 'array',
-        'fec' => 'datetime',
     ];
 
     // Relaciones

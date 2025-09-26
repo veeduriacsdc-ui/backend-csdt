@@ -1,0 +1,87 @@
+# Dockerfile para producción - CONSEJO SOCIAL DE VEEDURÍA Y DESARROLLO TERRITORIAL
+FROM php:8.1-fpm-alpine
+
+# Instalar dependencias del sistema
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    postgresql-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libzip-dev \
+    oniguruma-dev \
+    icu-dev \
+    libxml2-dev \
+    curl \
+    git \
+    unzip \
+    nodejs \
+    npm
+
+# Instalar extensiones de PHP
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo \
+        pdo_pgsql \
+        gd \
+        zip \
+        intl \
+        xml \
+        mbstring \
+        bcmath \
+        opcache
+
+# Configurar OPcache para producción
+RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.memory_consumption=256" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.interned_strings_buffer=16" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.max_accelerated_files=20000" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.save_comments=1" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.fast_shutdown=1" >> /usr/local/etc/php/conf.d/opcache.ini
+
+# Instalar Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Crear usuario para la aplicación
+RUN addgroup -g 1000 -S www && \
+    adduser -u 1000 -D -S -G www www
+
+# Establecer directorio de trabajo
+WORKDIR /var/www/html
+
+# Copiar archivos de la aplicación
+COPY . .
+
+# Instalar dependencias de PHP
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Instalar dependencias de Node.js para el frontend
+WORKDIR /var/www/html/frontend
+RUN npm ci --only=production
+
+# Construir frontend
+RUN npm run build
+
+# Volver al directorio principal
+WORKDIR /var/www/html
+
+# Configurar permisos
+RUN chown -R www:www /var/www/html \
+    && chmod -R 755 /var/www/html \
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache
+
+# Configurar Nginx
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Configurar PHP-FPM
+COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
+
+# Exponer puerto
+EXPOSE 80 443
+
+# Comando de inicio
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

@@ -3,25 +3,41 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Veeduria extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'veedurias';
-    
+    protected $table = 'vee';
+    protected $primaryKey = 'id';
+
     protected $fillable = [
-        'usu_id', 'ope_id', 'tit', 'des', 'tip', 'est', 'pri', 'cat', 'ubi', 
-        'pre', 'fec_reg', 'fec_rad', 'fec_cer', 'num_rad', 'not_ope', 
-        'rec_ia', 'arc'
+        'usu_id',
+        'ope_id',
+        'tit',
+        'des',
+        'tip',
+        'est',
+        'pri',
+        'cat',
+        'ubi',
+        'pre',
+        'fec_reg',
+        'fec_rad',
+        'fec_cer',
+        'num_rad',
+        'not_ope',
+        'rec_ia',
+        'arc'
     ];
 
     protected $casts = [
         'fec_reg' => 'datetime',
         'fec_rad' => 'datetime',
         'fec_cer' => 'datetime',
+        'pre' => 'decimal:2',
         'rec_ia' => 'array',
         'arc' => 'array',
     ];
@@ -37,11 +53,6 @@ class Veeduria extends Model
         return $this->belongsTo(Usuario::class, 'ope_id');
     }
 
-    public function donaciones()
-    {
-        return $this->hasMany(Donacion::class, 'vee_id');
-    }
-
     public function tareas()
     {
         return $this->hasMany(Tarea::class, 'vee_id');
@@ -52,20 +63,25 @@ class Veeduria extends Model
         return $this->hasMany(Archivo::class, 'vee_id');
     }
 
-    // Scopes
-    public function scopeActivas($query)
+    public function analisisIA()
     {
-        return $query->where('est', '!=', 'cer');
+        return $this->hasMany(AnalisisIA::class, 'vee_id');
     }
 
-    public function scopePorEstado($query, $estado)
+    // Scopes
+    public function scopeActivos($query)
     {
-        return $query->where('est', $estado);
+        return $query->whereIn('est', ['pen', 'pro', 'rad']);
     }
 
     public function scopePorTipo($query, $tipo)
     {
         return $query->where('tip', $tipo);
+    }
+
+    public function scopePorEstado($query, $estado)
+    {
+        return $query->where('est', $estado);
     }
 
     public function scopePorPrioridad($query, $prioridad)
@@ -76,16 +92,6 @@ class Veeduria extends Model
     public function scopePorCategoria($query, $categoria)
     {
         return $query->where('cat', $categoria);
-    }
-
-    public function scopePorUsuario($query, $usuarioId)
-    {
-        return $query->where('usu_id', $usuarioId);
-    }
-
-    public function scopePorOperador($query, $operadorId)
-    {
-        return $query->where('ope_id', $operadorId);
     }
 
     public function scopePendientes($query)
@@ -108,112 +114,170 @@ class Veeduria extends Model
         return $query->where('est', 'cer');
     }
 
-    // Métodos de negocio
-    public function getEstadoColorAttribute()
+    public function scopeCanceladas($query)
     {
-        return match ($this->est) {
-            'pen' => 'warning',
-            'pro' => 'info',
-            'rad' => 'primary',
-            'cer' => 'success',
-            'can' => 'danger',
-            default => 'secondary'
-        };
+        return $query->where('est', 'can');
     }
 
-    public function getPrioridadColorAttribute()
+    public function scopePorUsuario($query, $usuarioId)
     {
-        return match ($this->pri) {
-            'baj' => 'success',
-            'med' => 'warning',
-            'alt' => 'danger',
-            'urg' => 'dark',
-            default => 'secondary'
-        };
+        return $query->where('usu_id', $usuarioId);
     }
 
-    public function getTipoTextoAttribute()
+    public function scopePorOperador($query, $operadorId)
     {
-        return match ($this->tip) {
+        return $query->where('ope_id', $operadorId);
+    }
+
+    public function scopeConPresupuesto($query)
+    {
+        return $query->whereNotNull('pre')->where('pre', '>', 0);
+    }
+
+    public function scopeSinPresupuesto($query)
+    {
+        return $query->where(function($q) {
+            $q->whereNull('pre')->orWhere('pre', 0);
+        });
+    }
+
+    // Accessors
+    public function getTipoDescripcionAttribute()
+    {
+        $tipos = [
             'pet' => 'Petición',
             'que' => 'Queja',
             'rec' => 'Reclamo',
             'sug' => 'Sugerencia',
             'fel' => 'Felicitación',
-            'den' => 'Denuncia',
-            default => 'Desconocido'
-        };
+            'den' => 'Denuncia'
+        ];
+        return $tipos[$this->tip] ?? 'Desconocido';
     }
 
-    public function radicar()
+    public function getEstadoDescripcionAttribute()
+    {
+        $estados = [
+            'pen' => 'Pendiente',
+            'pro' => 'En Proceso',
+            'rad' => 'Radicada',
+            'cer' => 'Cerrada',
+            'can' => 'Cancelada'
+        ];
+        return $estados[$this->est] ?? 'Desconocido';
+    }
+
+    public function getPrioridadDescripcionAttribute()
+    {
+        $prioridades = [
+            'baj' => 'Baja',
+            'med' => 'Media',
+            'alt' => 'Alta',
+            'urg' => 'Urgente'
+        ];
+        return $prioridades[$this->pri] ?? 'Desconocida';
+    }
+
+    public function getCategoriaDescripcionAttribute()
+    {
+        $categorias = [
+            'inf' => 'Infraestructura',
+            'ser' => 'Servicios',
+            'seg' => 'Seguridad',
+            'edu' => 'Educación',
+            'sal' => 'Salud',
+            'tra' => 'Transporte',
+            'amb' => 'Ambiente',
+            'otr' => 'Otros'
+        ];
+        return $categorias[$this->cat] ?? 'Sin categoría';
+    }
+
+    public function getDiasTranscurridosAttribute()
+    {
+        return $this->fec_reg ? $this->fec_reg->diffInDays(now()) : 0;
+    }
+
+    public function getEsUrgenteAttribute()
+    {
+        return $this->pri === 'urg' || $this->dias_transcurridos > 30;
+    }
+
+    // Mutators
+    public function setTitAttribute($value)
+    {
+        $this->attributes['tit'] = ucfirst(trim($value));
+    }
+
+    public function setDesAttribute($value)
+    {
+        $this->attributes['des'] = trim($value);
+    }
+
+    // Métodos de utilidad
+    public function asignarOperador($operadorId, $notas = null)
     {
         $this->update([
-            'est' => 'rad',
+            'ope_id' => $operadorId,
+            'not_ope' => $notas,
+            'est' => 'pro'
+        ]);
+    }
+
+    public function radicar($numeroRadicacion = null)
+    {
+        $numero = $numeroRadicacion ?? $this->generarNumeroRadicacion();
+        $this->update([
+            'num_rad' => $numero,
             'fec_rad' => now(),
-            'num_rad' => $this->generarNumeroRadicacion()
+            'est' => 'rad'
         ]);
     }
 
-    public function cerrar()
+    public function cerrar($notas = null)
     {
         $this->update([
+            'fec_cer' => now(),
             'est' => 'cer',
-            'fec_cer' => now()
+            'not_ope' => $notas ? $this->not_ope . "\n" . $notas : $this->not_ope
         ]);
     }
 
-    public function cancelar()
+    public function cancelar($motivo = null)
     {
-        $this->update(['est' => 'can']);
+        $this->update([
+            'est' => 'can',
+            'not_ope' => $motivo ? $this->not_ope . "\nCancelada: " . $motivo : $this->not_ope
+        ]);
     }
 
-    public function asignarOperador($operadorId)
+    public function generarNumeroRadicacion()
     {
-        $this->update(['ope_id' => $operadorId]);
-    }
-
-    private function generarNumeroRadicacion()
-    {
-        $prefijo = 'VEE';
         $fecha = now()->format('Ymd');
-        $secuencial = str_pad(Veeduria::whereDate('fec_rad', now()->toDateString())->count() + 1, 4, '0', STR_PAD_LEFT);
-        
-        return $prefijo . $fecha . $secuencial;
+        $ultimo = self::whereDate('fec_rad', now())->count();
+        return 'VEE-' . $fecha . '-' . str_pad($ultimo + 1, 4, '0', STR_PAD_LEFT);
     }
 
-    // Validaciones
-    public static function reglas($id = null)
+    public function agregarRecomendacionIA($recomendacion)
     {
-        return [
-            'usu_id' => 'required|exists:usuarios,id',
-            'ope_id' => 'nullable|exists:usuarios,id',
-            'tit' => 'required|string|max:200',
-            'des' => 'required|string',
-            'tip' => 'required|in:pet,que,rec,sug,fel,den',
-            'est' => 'sometimes|in:pen,pro,rad,cer,can',
-            'pri' => 'sometimes|in:baj,med,alt,urg',
-            'cat' => 'nullable|in:inf,ser,seg,edu,sal,tra,amb,otr',
-            'ubi' => 'nullable|string|max:200',
-            'pre' => 'nullable|numeric|min:0',
+        $rec_ia = $this->rec_ia ?? [];
+        $rec_ia[] = [
+            'texto' => $recomendacion,
+            'fecha' => now()->toISOString(),
+            'tipo' => 'ia'
         ];
+        $this->update(['rec_ia' => $rec_ia]);
     }
 
-    public static function mensajes()
+    public function agregarArchivo($archivo)
     {
-        return [
-            'usu_id.required' => 'El usuario es obligatorio.',
-            'usu_id.exists' => 'El usuario seleccionado no existe.',
-            'tit.required' => 'El título es obligatorio.',
-            'tit.max' => 'El título no puede exceder 200 caracteres.',
-            'des.required' => 'La descripción es obligatoria.',
-            'tip.required' => 'El tipo es obligatorio.',
-            'tip.in' => 'El tipo debe ser válido.',
-            'est.in' => 'El estado debe ser válido.',
-            'pri.in' => 'La prioridad debe ser válida.',
-            'cat.in' => 'La categoría debe ser válida.',
-            'ubi.max' => 'La ubicación no puede exceder 200 caracteres.',
-            'pre.numeric' => 'El presupuesto debe ser un número.',
-            'pre.min' => 'El presupuesto no puede ser negativo.',
+        $arc = $this->arc ?? [];
+        $arc[] = [
+            'nombre' => $archivo['nombre'],
+            'ruta' => $archivo['ruta'],
+            'tipo' => $archivo['tipo'],
+            'fecha' => now()->toISOString()
         ];
+        $this->update(['arc' => $arc]);
     }
 }
