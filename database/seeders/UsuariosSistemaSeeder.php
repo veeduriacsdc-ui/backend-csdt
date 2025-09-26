@@ -38,11 +38,6 @@ class UsuariosSistemaSeeder extends Seeder
         $this->command->info('ℹ️ Los usuarios del sistema ya fueron creados por OperadoresSeeder.');
         return;
 
-        $this->command->info('📋 USUARIOS DEL SISTEMA CREADOS:');
-        $this->command->info('Admin: esteban.41m@gmail.com / password123');
-        $this->command->info('Cliente: cliente@ejemplo.com / cliente123');
-        $this->command->info('Operador: operador@ejemplo.com / operador123');
-        $this->command->info('Administrador: admin@ejemplo.com / admin123');
-        $this->command->info('Super Admin: superadmin@ejemplo.com / superadmin123');
+        $this->command->info('📋 USUARIOS DEL SISTEMA CREADOS EXITOSAMENTE');
     }
 }

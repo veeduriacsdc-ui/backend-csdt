@@ -126,11 +126,6 @@ class OperadoresSeeder extends Seeder
             }
         }
 
-        $this->command->info('📋 USUARIOS CREADOS:');
-        $this->command->info('Admin: esteban.41m@gmail.com / password123');
-        $this->command->info('Cliente: cliente@ejemplo.com / cliente123');
-        $this->command->info('Operador: operador@ejemplo.com / operador123');
-        $this->command->info('Administrador: admin@ejemplo.com / admin123');
-        $this->command->info('Super Admin: superadmin@ejemplo.com / superadmin123');
+        $this->command->info('📋 USUARIOS CREADOS EXITOSAMENTE');
     }
 }
