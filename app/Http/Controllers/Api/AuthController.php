@@ -235,7 +235,7 @@ class AuthController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'cor' => 'required|email|exists:usuarios,cor'
+                'cor' => 'required|email|exists:usu,cor'
             ]);
 
             if ($validator->fails()) {
@@ -274,7 +274,7 @@ class AuthController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'cor' => 'required|email|exists:usuarios,cor',
+                'cor' => 'required|email|exists:usu,cor',
                 'token' => 'required|string',
                 'con_nueva' => 'required|string|min:8|confirmed',
             ]);
@@ -317,7 +317,7 @@ class AuthController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'cor' => 'required|email|exists:usuarios,cor',
+                'cor' => 'required|email|exists:usu,cor',
                 'token' => 'required|string',
             ]);
 

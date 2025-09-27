@@ -368,7 +368,7 @@ class VeeduriaController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'ope_id' => 'required|exists:usuarios,id'
+                'ope_id' => 'required|exists:usu,id'
             ]);
 
             if ($validator->fails()) {
