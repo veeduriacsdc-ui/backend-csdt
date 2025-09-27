@@ -82,21 +82,6 @@ return [
             'description' => 'Limpiar cachés obsoletos del sistema de IA'
         ],
 
-        /*
-        |--------------------------------------------------------------------------
-        | Verificación de Salud del Sistema
-        |--------------------------------------------------------------------------
-        |
-        | Verifica el estado general del sistema de IA y genera recomendaciones
-        | Frecuencia: Cada hora
-        |
-        */
-        'verificar_salud' => [
-            'command' => 'ia:mejorar-automaticamente --tipo=salud',
-            'schedule' => 'hourly',
-            'enabled' => true,
-            'description' => 'Verificar salud del sistema de IA'
-        ],
 
         /*
         |--------------------------------------------------------------------------

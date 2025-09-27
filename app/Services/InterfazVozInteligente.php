@@ -259,8 +259,6 @@ class InterfazVozInteligente
                     return $this->ejecutarListado($intencion, $contexto);
                 case 'ayuda':
                     return $this->ejecutarAyuda($intencion, $contexto);
-                case 'estado':
-                    return $this->ejecutarEstadoSistema($intencion, $contexto);
                 default:
                     return $this->ejecutarConsultaGeneral($intencion, $contexto);
             }
@@ -373,39 +371,6 @@ class InterfazVozInteligente
         ];
     }
 
-    /**
-     * Ejecutar consulta del estado del sistema
-     */
-    protected function ejecutarEstadoSistema(array $intencion, array $contexto): array
-    {
-        $estado = [
-            'sistema' => 'CSDT - Control Social, Justicia y Transparencia',
-            'version' => '1.0.0',
-            'estado_general' => 'Operativo',
-            'servicios_activos' => [
-                'Base de datos' => $this->verificarServicio('mysql') ? '✅' : '❌',
-                'Cache Redis' => $this->verificarServicio('redis') ? '✅' : '❌',
-                'Sistema de archivos' => '✅',
-                'API REST' => '✅',
-                'Interfaz web' => '✅'
-            ],
-            'ias_disponibles' => [
-                'OpenAI GPT-4' => config('services.openai.api_key') ? '✅' : '❌',
-                'Anthropic Claude' => config('services.anthropic.api_key') ? '✅' : '❌',
-                'Google Gemini' => config('services.google_gemini.api_key') ? '✅' : '❌',
-                'LexisNexis' => config('services.lexisnexis.api_key') ? '✅' : '❌',
-                'Legal AI Library' => config('services.legal_ai_library.api_key') ? '✅' : '❌'
-            ],
-            'hora_actual' => now()->format('d/m/Y H:i:s'),
-            'usuario_actual' => auth()->check() ? auth()->user()->nombre : 'No autenticado'
-        ];
-
-        return [
-            'exito' => true,
-            'tipo' => 'estado',
-            'estado' => $estado
-        ];
-    }
 
     /**
      * Generar respuesta inteligente usando múltiples IAs
@@ -632,26 +597,6 @@ class InterfazVozInteligente
         return min($confianza, 1.0);
     }
 
-    /**
-     * Verificar estado de un servicio
-     */
-    protected function verificarServicio(string $servicio): bool
-    {
-        try {
-            switch ($servicio) {
-                case 'mysql':
-                    // Verificar conexión a MySQL
-                    return !empty(config('database.connections.mysql'));
-                case 'redis':
-                    // Verificar conexión a Redis
-                    return Cache::store('redis')->get('test_key') !== null;
-                default:
-                    return true;
-            }
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
 
     /**
      * Registrar interacción para análisis
